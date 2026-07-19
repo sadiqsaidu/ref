@@ -1,12 +1,12 @@
 // Confirm real mainnet data flows before wiring the UI to it. Run locally:
-//   TXLINE_API_TOKEN=... npx tsx scripts/smoke-live.ts <fixtureId> [seconds]
+//   TXLINE_API_TOKEN=... npx tsx scripts/smoke-live.mts <fixtureId> [seconds]
 import { parseSse } from "../src/lib/txline/api";
 import { createMapper } from "../src/lib/txline/map";
 import type { RawScore } from "../src/lib/types";
 
 const [fixtureId, seconds = "30"] = process.argv.slice(2);
 if (!fixtureId || !process.env.TXLINE_API_TOKEN) {
-  console.error("usage: TXLINE_API_TOKEN=... npx tsx scripts/smoke-live.ts <fixtureId> [seconds]");
+  console.error("usage: TXLINE_API_TOKEN=... npx tsx scripts/smoke-live.mts <fixtureId> [seconds]");
   process.exit(1);
 }
 

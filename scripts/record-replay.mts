@@ -1,10 +1,10 @@
-// usage: node --experimental-strip-types scripts/record-replay.ts <fixtureId> [name]
+// usage: npx tsx scripts/record-replay.mts <fixtureId> [name]
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const [fixtureId, name = `fixture-${process.argv[2]}`] = process.argv.slice(2);
 if (!fixtureId) {
-  console.error("usage: node --experimental-strip-types scripts/record-replay.ts <fixtureId> [name]");
+  console.error("usage: npx tsx scripts/record-replay.mts <fixtureId> [name]");
   process.exit(1);
 }
 

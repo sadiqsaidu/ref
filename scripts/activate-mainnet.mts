@@ -1,5 +1,5 @@
 // One-shot TxLINE mainnet free-tier activation. Run locally:
-//   ANCHOR_WALLET=~/.config/solana/id.json npx tsx scripts/activate-mainnet.ts
+//   ANCHOR_WALLET=~/.config/solana/id.json npx tsx scripts/activate-mainnet.mts
 // Needs devDependencies: @solana/web3.js, tweetnacl. Spends a small SOL fee.
 import { readFileSync } from "node:fs";
 import {

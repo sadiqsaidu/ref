@@ -117,7 +117,7 @@ wallet:
 2. Run the one-shot activation script:
 
    ```bash
-   ANCHOR_WALLET=~/.config/solana/id.json npx tsx scripts/activate-mainnet.ts
+   ANCHOR_WALLET=~/.config/solana/id.json npx tsx scripts/activate-mainnet.mts
    ```
 
    It subscribes on-chain (service level 12, 4 weeks, all leagues), fetches a
@@ -134,18 +134,18 @@ All run with `npx tsx` (downloaded on demand):
 
 | Script                        | Command                                                             | What it does                                                        |
 | ----------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| `scripts/verify-endpoints.ts` | `npx tsx scripts/verify-endpoints.ts`                               | checks every API path we use against the published `docs.yaml`, ✓/✗ table, non-zero exit on a miss |
-| `scripts/smoke-live.ts`       | `TXLINE_API_TOKEN=… npx tsx scripts/smoke-live.ts <fixtureId> [s]`  | streams live scores for 30s, prints raw + normalized events          |
-| `scripts/record-replay.ts`    | `npx tsx scripts/record-replay.ts <fixtureId> <name>`               | saves a past match to `data/replays/<name>.json` for replay mode     |
-| `scripts/activate-mainnet.ts` | see previous section                                                | one-shot mainnet subscription + token activation                     |
+| `scripts/verify-endpoints.mts` | `npx tsx scripts/verify-endpoints.mts`                               | checks every API path we use against the published `docs.yaml`, ✓/✗ table, non-zero exit on a miss |
+| `scripts/smoke-live.mts`       | `TXLINE_API_TOKEN=… npx tsx scripts/smoke-live.mts <fixtureId> [s]`  | streams live scores for 30s, prints raw + normalized events          |
+| `scripts/record-replay.mts`    | `npx tsx scripts/record-replay.mts <fixtureId> <name>`               | saves a past match to `data/replays/<name>.json` for replay mode     |
+| `scripts/activate-mainnet.mts` | see previous section                                                | one-shot mainnet subscription + token activation                     |
 
 ## Pre-kickoff checklist
 
-1. `npx tsx scripts/verify-endpoints.ts` — required: our endpoint paths were
+1. `npx tsx scripts/verify-endpoints.mts` — required: our endpoint paths were
    taken from a third-party SDK's source, not the spec itself.
-2. `TXLINE_API_TOKEN=… npx tsx scripts/smoke-live.ts <fixtureId>` — confirm
+2. `TXLINE_API_TOKEN=… npx tsx scripts/smoke-live.mts <fixtureId>` — confirm
    real data flows.
-3. `npx tsx scripts/record-replay.ts <fixtureId> <name>` — record a
+3. `npx tsx scripts/record-replay.mts <fixtureId> <name>` — record a
    controversial past match for the warm-up demo and as a realistic fallback.
 
 ## Demo-day runbook

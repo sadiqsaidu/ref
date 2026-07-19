@@ -8,9 +8,9 @@ const origin = process.env.TXLINE_API_ORIGIN ?? "https://txline.txodds.com";
 const USED: [path: string, usedBy: string][] = [
   ["/auth/guest/start", "auth (api.ts, scripts)"],
   ["/scores/stream", "live source"],
-  ["/scores/historical/{fixtureId}", "record-replay.ts"],
+  ["/scores/historical/{fixtureId}", "record-replay.mts"],
   ["/scores/stat-validation", "verify.ts"],
-  ["/token/activate", "activate-mainnet.ts"],
+  ["/token/activate", "activate-mainnet.mts"],
 ];
 
 const res = await fetch(`${origin}/docs/docs.yaml`);
