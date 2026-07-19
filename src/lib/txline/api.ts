@@ -1,4 +1,4 @@
-const origin = () => process.env.TXLINE_API_ORIGIN ?? "https://txline-dev.txodds.com";
+const origin = () => process.env.TXLINE_API_ORIGIN ?? "https://txline.txodds.com";
 
 let jwt: Promise<string> | null = null;
 

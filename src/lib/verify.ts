@@ -2,7 +2,13 @@ import type { RefEvent, Verify } from "./types";
 import { apiFetch } from "./txline/api";
 
 // Isolated so a swap to full on-chain validateStatV2 only touches this file.
-const DEVNET_PROGRAM = "6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J";
+const PROGRAMS = {
+  mainnet: "9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA",
+  devnet: "6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J",
+};
+
+export const network = () =>
+  process.env.TXLINE_NETWORK === "devnet" ? "devnet" : "mainnet";
 
 const STAT_KEYS: Partial<Record<RefEvent["kind"], string>> = {
   goal: "1,2",
@@ -22,9 +28,10 @@ export async function verifyEvent(event: RefEvent): Promise<Verify> {
     );
     const proof: { eventStatRoot?: unknown } = await res.json();
     if (!proof?.eventStatRoot) return { status: "failed" };
+    const net = network();
     return {
       status: "anchored",
-      ref: `https://explorer.solana.com/address/${DEVNET_PROGRAM}?cluster=devnet`,
+      ref: `https://explorer.solana.com/address/${PROGRAMS[net]}${net === "devnet" ? "?cluster=devnet" : ""}`,
     };
   } catch {
     return { status: "pending" };
