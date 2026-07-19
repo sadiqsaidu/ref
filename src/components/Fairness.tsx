@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { loadBaselines } from "@/lib/baselines";
 import { ordinal, percentile, tierFor } from "@/lib/percentile";
@@ -77,6 +77,26 @@ const MirrorRow = memo(function MirrorRow({
   );
 });
 
+function Digit({ value, color }: { value: number; color: string }) {
+  const reduced = useReducedMotion() ?? false;
+  return (
+    <span className="relative inline-block overflow-hidden align-bottom" style={{ color }}>
+      <AnimatePresence mode="popLayout" initial={false}>
+        <motion.span
+          key={value}
+          className="inline-block tabular-nums"
+          initial={reduced ? false : { y: "-100%" }}
+          animate={{ y: 0 }}
+          exit={reduced ? undefined : { y: "100%" }}
+          transition={{ duration: 0.35, ease: "easeOut" }}
+        >
+          {value}
+        </motion.span>
+      </AnimatePresence>
+    </span>
+  );
+}
+
 const TICK_COLORS: Partial<Record<RefKind, string>> = {
   goal: "var(--green)",
   red: "var(--red)",
@@ -104,18 +124,32 @@ function Timeline({
     return () => ro.disconnect();
   }, []);
 
+  const reduced = useReducedMotion() ?? false;
   const plotted = events.filter(
     (e) => e.minute !== null && e.kind !== "phase_change" && e.kind !== "var_end",
   );
   const maxMin = plotted.some((e) => (e.minute ?? 0) > 90) ? 120 : 90;
   const pad = 4;
   const x = (m: number) => pad + (Math.min(m, maxMin) / maxMin) * (w - pad * 2);
+  const lastGoal = [...plotted].reverse().find((e) => e.kind === "goal");
 
   return (
     <div ref={wrapRef}>
       {w > 0 && (
         <svg width={w} height="20" className="block">
           <line x1={pad} y1="10" x2={w - pad} y2="10" stroke="var(--border)" />
+          {lastGoal && !reduced && (
+            <motion.circle
+              key={lastGoal.id}
+              cx={x(lastGoal.minute!)}
+              cy="10"
+              fill="none"
+              stroke="var(--green)"
+              initial={{ r: 2, opacity: 0.9 }}
+              animate={{ r: 9, opacity: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+            />
+          )}
           {[45, 90].map((m) => (
             <line key={m} x1={x(m)} y1="7" x2={x(m)} y2="13" stroke="var(--muted)" strokeWidth="1" />
           ))}
@@ -231,9 +265,9 @@ export default function Fairness({
           <div className="flex items-end justify-between">
             <span className="label text-amber">Team A</span>
             <span className="bignum text-5xl">
-              <span className="text-amber">{state.score[1]}</span>
+              <Digit value={state.score[1]} color="var(--amber)" />
               <span className="text-muted"> — </span>
-              <span className="text-blue">{state.score[2]}</span>
+              <Digit value={state.score[2]} color="var(--blue)" />
             </span>
             <span className="label text-blue">Team B</span>
           </div>

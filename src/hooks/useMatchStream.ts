@@ -1,24 +1,46 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { reduce } from "@/lib/reduce";
 import type { RefEvent, Verify } from "@/lib/types";
 
-export type Connection = "connecting" | "open" | "error";
+export type StreamConfig = {
+  source: string;
+  speed: number | "instant";
+  name?: string;
+  fixture?: string;
+};
 
-export function useMatchStream(source: string, speed: number | "instant" = 1) {
+export type Connection = {
+  status: "connecting" | "open" | "reconnecting" | "error";
+  attempt: number;
+};
+
+export function useMatchStream(cfg: StreamConfig) {
   const [events, setEvents] = useState<RefEvent[]>([]);
-  const [connection, setConnection] = useState<Connection>("connecting");
+  const [connection, setConnection] = useState<Connection>({
+    status: "connecting",
+    attempt: 0,
+  });
   const buffer = useRef<RefEvent[]>([]);
   const flushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const { source, speed, name, fixture } = cfg;
   useEffect(() => {
     setEvents([]);
-    setConnection("connecting");
+    setConnection({ status: "connecting", attempt: 0 });
     buffer.current = [];
-    const es = new EventSource(`/api/stream?source=${source}&speed=${speed}`);
-    es.onopen = () => setConnection("open");
-    es.onerror = () => setConnection("error");
+    const params = new URLSearchParams({ source, speed: String(speed) });
+    if (name) params.set("name", name);
+    if (fixture) params.set("fixture", fixture);
+    const es = new EventSource(`/api/stream?${params}`);
+    es.onopen = () => setConnection({ status: "open", attempt: 0 });
+    es.onerror = () =>
+      setConnection((c) =>
+        es.readyState === EventSource.CLOSED
+          ? { status: "error", attempt: c.attempt }
+          : { status: "reconnecting", attempt: c.attempt + 1 },
+      );
 
     const flush = () => {
       flushTimer.current = null;
@@ -46,8 +68,12 @@ export function useMatchStream(source: string, speed: number | "instant" = 1) {
       es.close();
       if (flushTimer.current !== null) clearTimeout(flushTimer.current);
     };
-  }, [source, speed]);
+  }, [source, speed, name, fixture]);
+
+  const inject = useCallback((injected: RefEvent[]) => {
+    setEvents((prev) => [...prev, ...injected]);
+  }, []);
 
   const state = useMemo(() => reduce(events), [events]);
-  return { events, state, connection };
+  return { events, state, connection, inject };
 }

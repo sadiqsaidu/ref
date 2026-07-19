@@ -22,8 +22,8 @@ const ACCENTS: Partial<Record<RefKind, string>> = {
   goal: "var(--green)",
 };
 
-const RED_FLASH = "rgba(255, 68, 68, 0.12)";
-const AMBER_FLASH = "rgba(240, 180, 41, 0.12)";
+const RED_FLASH = "color-mix(in srgb, var(--red) 12%, transparent)";
+const AMBER_FLASH = "color-mix(in srgb, var(--amber) 12%, transparent)";
 
 function textFor(e: RefEvent): string {
   switch (e.kind) {

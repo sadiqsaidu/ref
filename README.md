@@ -1,54 +1,63 @@
-# REF local setup
+# REF
 
-This project is a Next.js app. The default demo mode works without any API keys, so you can get it running locally in a few steps.
+Live referee-transparency dashboard for the World Cup final. An immutable ledger
+of every officiating decision (cards, penalties, VAR reviews, disallowed goals)
+streamed from TxLINE's cryptographically signed feed, next to a fairness panel
+comparing both teams' discipline against tournament baselines. All copy is
+descriptive and neutral: percentiles, "within normal range", "unusual", "rare".
 
-## Prerequisites
+## Local setup
 
-- Node.js 20 or newer
-- npm
-
-## 1. Install dependencies
-
-From the project root, run:
+Needs Node.js 20+ and npm. The default demo mode works without any API keys:
 
 ```bash
 npm install
+npm run dev        # http://localhost:3000 (or the next free port)
 ```
 
-## 2. Start the app locally
+`npm run build && npm run start` for a production build. If packages are
+missing, re-run `npm install`; stop the server with `Ctrl+C`.
 
-```bash
-npm run dev
-```
+## Mainnet free-tier setup (live data, optional)
 
-Then open:
+1. Fund a Solana wallet with a little SOL for fees (mainnet-beta).
+2. `ANCHOR_WALLET=~/.config/solana/id.json npx tsx scripts/activate-mainnet.ts`
+   — subscribes on-chain (service level 12, 4 weeks, all leagues), activates,
+   and prints your API token.
+3. Copy `.env.example` to `.env.local`; paste the token into `TXLINE_API_TOKEN`
+   and set `TXLINE_FIXTURE_ID` to the final's fixture id, then restart the dev
+   server. Tokens stay server-side; the browser only ever sees normalized
+   events.
 
-- http://localhost:3000
+## Pre-kickoff checklist
 
-If port 3000 is already in use, Next.js will usually choose the next available port and print the new URL in the terminal.
+1. `npx tsx scripts/verify-endpoints.ts` — confirms every endpoint path we use
+   exists in the published `docs.yaml`. Required: our paths were taken from a
+   third-party SDK's source, not the spec itself.
+2. `TXLINE_API_TOKEN=... npx tsx scripts/smoke-live.ts <fixtureId>` — watches
+   the live stream for 30s and prints raw + normalized events.
+3. `npx tsx scripts/record-replay.ts <fixtureId> <name>` — records a
+   controversial past match into `data/replays/<name>.json` for the warm-up
+   demo and as a realistic fallback.
 
-## 3. Build for production (optional)
+## Demo-day runbook
 
-```bash
-npm run build
-npm run start
-```
+- Open on `?source=replay&name=<match>&speed=16` and walk through the recorded
+  controversy.
+- At kickoff, open the demo drawer (`d`, or triple-tap the wordmark on mobile)
+  and switch to LIVE with the final's fixture id.
+- If the venue network or the feed misbehaves, switch to MOCK — a scripted
+  8-minute dramatic match. The drawer can also inject single test events for
+  rehearsal.
 
-## Optional: enable live data
+## Data notes
 
-The app can also use live TXLine data. That is optional. If you want to try it, create a file named `.env.local` in the project root with values like:
-
-```bash
-TXLINE_FIXTURE_ID=your-fixture-id
-TXLINE_API_ORIGIN=https://txline.txodds.com
-TXLINE_API_TOKEN=your-token
-TXLINE_NETWORK=mainnet
-```
-
-Then restart the dev server.
-
-## Troubleshooting
-
-- If you see missing package errors, run `npm install` again.
-- If the app does not start, make sure you are in the project folder and that Node.js is installed.
-- To stop the local server, press `Ctrl+C` in the terminal.
+- Fouls are approximated by conceded free kicks with the documented
+  `FreeKickType` danger levels — the feed's stated foul proxy. Labeled
+  "FK CONCEDED · foul proxy" in the UI.
+- "Anchored" marks come from TxLINE validation proofs for the fixture's stats
+  (`/scores/stat-validation`), linking to the program on Solana explorer.
+  Unavailable proofs degrade to "pending", never to a false check.
+- Endpoint paths must be verified against `docs.yaml` before going live
+  (`scripts/verify-endpoints.ts`); baselines in `data/baselines.json` are
+  placeholders until regenerated from recorded tournament matches.

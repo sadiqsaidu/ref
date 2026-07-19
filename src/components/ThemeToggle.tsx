@@ -19,7 +19,7 @@ export default function ThemeToggle() {
   return (
     <button
       onClick={toggle}
-      className="label h-11 cursor-pointer px-2 hover:text-text"
+      className="label h-11 w-14 cursor-pointer text-right hover:text-text"
       aria-label="Toggle theme"
     >
       {theme === null ? "····" : theme === "dark" ? "LIGHT" : "DARK"}

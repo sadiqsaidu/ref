@@ -14,11 +14,13 @@
     "react-dom": "19.1.0"
   },
   "devDependencies": {
+    "@solana/web3.js": "^1.98.4",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "tailwindcss": "^4",
+    "tweetnacl": "^1.0.3",
     "typescript": "^5"
   }
 }

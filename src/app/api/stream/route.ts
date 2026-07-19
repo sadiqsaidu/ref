@@ -16,7 +16,7 @@ export async function GET(req: Request) {
 
   const source: MatchSource =
     sourceName === "live"
-      ? liveSource(process.env.TXLINE_FIXTURE_ID ?? "")
+      ? liveSource(p.get("fixture") ?? process.env.TXLINE_FIXTURE_ID ?? "")
       : sourceName === "replay"
         ? replaySource(name, speed)
         : mockSource(speed);
