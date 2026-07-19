@@ -1,54 +1,161 @@
 # REF
 
-Live referee-transparency dashboard for the World Cup final. An immutable ledger
-of every officiating decision (cards, penalties, VAR reviews, disallowed goals)
-streamed from TxLINE's cryptographically signed feed, next to a fairness panel
-comparing both teams' discipline against tournament baselines. All copy is
-descriptive and neutral: percentiles, "within normal range", "unusual", "rare".
+Live referee-transparency dashboard for the World Cup final. REF shows an
+immutable ledger of every officiating decision (cards, penalties, VAR reviews,
+disallowed goals) streamed from TxLINE's cryptographically signed data feed,
+next to a fairness panel comparing both teams' discipline against tournament
+baselines. All copy is descriptive and neutral: percentiles,
+"within normal range", "unusual", "rare".
 
-## Local setup
+The screen is split into two panels:
 
-Needs Node.js 20+ and npm. The default demo mode works without any API keys:
+- **DECISION LEDGER** (left / LEDGER tab on mobile) — newest-first list of
+  every decision with minute stamps, team tags, severity accents, live VAR
+  review pairing, and a verification mark per entry (pending ○ / anchored ✓
+  linking to Solana explorer / failed ×).
+- **FAIRNESS** (right / FAIRNESS tab) — scoreline, mirror bar charts for
+  yellows, reds, fouls proxy, dangerous free kicks, corners and VAR counts, a
+  VAR summary box, percentile chips against tournament baselines, an
+  auto-composed verdict line, and a clickable match timeline.
+
+## Prerequisites
+
+- **Node.js 20 or newer** (`node -v` to check)
+- **npm** (ships with Node)
+
+Everything below is run from the project root.
+
+## Quick start (no API keys needed)
 
 ```bash
 npm install
-npm run dev        # http://localhost:3000 (or the next free port)
+npm run dev
 ```
 
-`npm run build && npm run start` for a production build. If packages are
-missing, re-run `npm install`; stop the server with `Ctrl+C`.
+Then open **http://localhost:3000** — the app starts in MOCK mode, a scripted
+8-minute dramatic match, so it works with zero configuration.
 
-## Mainnet free-tier setup (live data, optional)
+The dev and production servers are both **pinned to port 3000**. If the port
+is taken, the command fails with `EADDRINUSE` instead of silently moving to
+another port — see troubleshooting below.
 
-1. Fund a Solana wallet with a little SOL for fees (mainnet-beta).
-2. `ANCHOR_WALLET=~/.config/solana/id.json npx tsx scripts/activate-mainnet.ts`
-   — subscribes on-chain (service level 12, 4 weeks, all leagues), activates,
-   and prints your API token.
-3. Copy `.env.example` to `.env.local`; paste the token into `TXLINE_API_TOKEN`
-   and set `TXLINE_FIXTURE_ID` to the final's fixture id, then restart the dev
-   server. Tokens stay server-side; the browser only ever sees normalized
-   events.
+### Production build
+
+```bash
+npm run build
+npm run start     # serves the built app on http://localhost:3000
+```
+
+`npm run start` requires a completed `npm run build` first; without one it
+exits with an error and nothing will be listening.
+
+## Troubleshooting: "This site can't be reached" / ERR_CONNECTION_REFUSED
+
+This error means **nothing is listening on the URL you opened**. The usual
+causes, in order of likelihood:
+
+1. **Wrong port in the browser.** Older versions of this project let the dev
+   server silently fall back to port 3001 when 3000 was busy; a browser
+   pointed at `localhost:3001` then fails on every later run. Both scripts are
+   now pinned to **3000** — always open the exact URL printed under
+   `- Local:` in the terminal.
+2. **A stale server is still holding port 3000.** The startup then fails with
+   `EADDRINUSE` (nothing starts). Find and kill it:
+   - Windows: `netstat -ano | findstr :3000` then `taskkill /PID <pid> /F`
+   - macOS/Linux: `lsof -i :3000` then `kill <pid>`
+   Note the process is named `next-server`, not `npm`.
+3. **`npm run start` without a build.** It prints an error and exits — run
+   `npm run build` first.
+4. **The terminal shows a crash.** Whatever is printed there (missing
+   packages → `npm install`; syntax error → fix it) is the real cause; the
+   browser error is just the symptom.
+
+## Demo modes and URL parameters
+
+The stream source is chosen per-URL:
+
+| Parameter | Values                       | Default | Meaning                                  |
+| --------- | ---------------------------- | ------- | ---------------------------------------- |
+| `source`  | `mock` / `replay` / `live`   | `mock`  | scripted demo / recorded file / TxLINE   |
+| `speed`   | `1`, `4`, `16`, `instant`    | `4`     | playback multiplier (mock + replay)      |
+| `name`    | replay file name             | `match` | reads `data/replays/<name>.json`         |
+| `fixture` | numeric fixture id           | env     | overrides `TXLINE_FIXTURE_ID` for live   |
+
+Example: `http://localhost:3000/?source=replay&name=semifinal&speed=16`
+
+**Demo drawer**: press **`d`** (desktop) or **triple-tap the REF wordmark**
+(mobile) to open the hidden control drawer — switch source, pick a replay
+file and speed, set the fixture id, see network/connection state, and inject
+single test events (yellow, red, VAR overturn, goal) to rehearse the
+choreography. `Esc` closes it.
+
+## Environment variables (.env.local)
+
+Only needed for LIVE data and verification. Copy the template and fill it in:
+
+```bash
+cp .env.example .env.local
+```
+
+| Variable            | Example                      | Purpose                                        |
+| ------------------- | ---------------------------- | ---------------------------------------------- |
+| `TXLINE_API_ORIGIN` | `https://txline.txodds.com`  | TxLINE API host (default: mainnet)             |
+| `TXLINE_NETWORK`    | `mainnet` or `devnet`        | drives explorer links + footer label           |
+| `TXLINE_API_TOKEN`  | `…`                          | your activated API token (see below)           |
+| `TXLINE_FIXTURE_ID` | `17952170`                   | the match to stream and verify                 |
+
+Restart the dev server after changing `.env.local`. All credentials stay
+server-side — the browser only ever receives normalized events.
+
+## Getting a TxLINE API token (mainnet free tier)
+
+TxLINE access is activated by an on-chain Solana subscription tied to your
+wallet:
+
+1. Have a Solana wallet keyfile (e.g. `~/.config/solana/id.json`) with a
+   small amount of SOL on mainnet-beta for transaction fees.
+2. Run the one-shot activation script:
+
+   ```bash
+   ANCHOR_WALLET=~/.config/solana/id.json npx tsx scripts/activate-mainnet.ts
+   ```
+
+   It subscribes on-chain (service level 12, 4 weeks, all leagues), fetches a
+   guest JWT, signs the activation preimage with your wallet, calls
+   `/api/token/activate`, and prints `TXLINE_API_TOKEN`. It fails loudly on
+   any network/host mismatch (non-mainnet RPC, wrong API origin, empty
+   wallet).
+3. Paste the printed token into `TXLINE_API_TOKEN` in `.env.local`, set
+   `TXLINE_FIXTURE_ID`, restart, and open `?source=live`.
+
+## Operations scripts
+
+All run with `npx tsx` (downloaded on demand):
+
+| Script                        | Command                                                             | What it does                                                        |
+| ----------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `scripts/verify-endpoints.ts` | `npx tsx scripts/verify-endpoints.ts`                               | checks every API path we use against the published `docs.yaml`, ✓/✗ table, non-zero exit on a miss |
+| `scripts/smoke-live.ts`       | `TXLINE_API_TOKEN=… npx tsx scripts/smoke-live.ts <fixtureId> [s]`  | streams live scores for 30s, prints raw + normalized events          |
+| `scripts/record-replay.ts`    | `npx tsx scripts/record-replay.ts <fixtureId> <name>`               | saves a past match to `data/replays/<name>.json` for replay mode     |
+| `scripts/activate-mainnet.ts` | see previous section                                                | one-shot mainnet subscription + token activation                     |
 
 ## Pre-kickoff checklist
 
-1. `npx tsx scripts/verify-endpoints.ts` — confirms every endpoint path we use
-   exists in the published `docs.yaml`. Required: our paths were taken from a
-   third-party SDK's source, not the spec itself.
-2. `TXLINE_API_TOKEN=... npx tsx scripts/smoke-live.ts <fixtureId>` — watches
-   the live stream for 30s and prints raw + normalized events.
-3. `npx tsx scripts/record-replay.ts <fixtureId> <name>` — records a
-   controversial past match into `data/replays/<name>.json` for the warm-up
-   demo and as a realistic fallback.
+1. `npx tsx scripts/verify-endpoints.ts` — required: our endpoint paths were
+   taken from a third-party SDK's source, not the spec itself.
+2. `TXLINE_API_TOKEN=… npx tsx scripts/smoke-live.ts <fixtureId>` — confirm
+   real data flows.
+3. `npx tsx scripts/record-replay.ts <fixtureId> <name>` — record a
+   controversial past match for the warm-up demo and as a realistic fallback.
 
 ## Demo-day runbook
 
-- Open on `?source=replay&name=<match>&speed=16` and walk through the recorded
-  controversy.
-- At kickoff, open the demo drawer (`d`, or triple-tap the wordmark on mobile)
-  and switch to LIVE with the final's fixture id.
-- If the venue network or the feed misbehaves, switch to MOCK — a scripted
-  8-minute dramatic match. The drawer can also inject single test events for
-  rehearsal.
+- Open on `?source=replay&name=<match>&speed=16` and walk through the
+  recorded controversy.
+- At kickoff, open the demo drawer and switch to LIVE with the final's
+  fixture id.
+- If the venue network or the feed misbehaves, switch to MOCK. The drawer's
+  inject buttons are for rehearsal only.
 
 ## Data notes
 
@@ -58,6 +165,5 @@ missing, re-run `npm install`; stop the server with `Ctrl+C`.
 - "Anchored" marks come from TxLINE validation proofs for the fixture's stats
   (`/scores/stat-validation`), linking to the program on Solana explorer.
   Unavailable proofs degrade to "pending", never to a false check.
-- Endpoint paths must be verified against `docs.yaml` before going live
-  (`scripts/verify-endpoints.ts`); baselines in `data/baselines.json` are
-  placeholders until regenerated from recorded tournament matches.
+- Baselines in `data/baselines.json` are placeholder distributions until
+  regenerated from recorded tournament matches.
