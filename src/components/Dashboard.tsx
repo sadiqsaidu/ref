@@ -3,18 +3,8 @@
 import { useState } from "react";
 import TopBar from "@/components/TopBar";
 import Ledger from "@/components/Ledger";
+import Fairness from "@/components/Fairness";
 import { useMatchStream } from "@/hooks/useMatchStream";
-
-function Panel({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="flex min-h-0 flex-1 flex-col bg-panel">
-      <div className="label shrink-0 border-b border-border px-3 py-2">
-        {title}
-      </div>
-      <div className="min-h-0 flex-1 overflow-y-auto p-3">{children}</div>
-    </section>
-  );
-}
 
 export default function Dashboard({ network }: { network: string }) {
   const [tab, setTab] = useState<"ledger" | "fairness">("ledger");
@@ -52,18 +42,7 @@ export default function Dashboard({ network }: { network: string }) {
         <div
           className={`${tab === "fairness" ? "flex" : "hidden"} min-h-0 flex-col lg:flex`}
         >
-          <Panel title="Fairness">
-            <div className="bignum text-4xl">
-              <span className="text-amber">{state.score[1]}</span>
-              <span className="text-muted"> — </span>
-              <span className="text-blue">{state.score[2]}</span>
-            </div>
-            <div className="label mt-4">
-              yellows {state.teams[1].yellows}·{state.teams[2].yellows} · reds{" "}
-              {state.teams[1].reds}·{state.teams[2].reds} · fouls proxy{" "}
-              {state.teams[1].foulsProxy}·{state.teams[2].foulsProxy}
-            </div>
-          </Panel>
+          <Fairness state={state} events={events} onHighlight={setHighlightId} />
         </div>
       </main>
 
