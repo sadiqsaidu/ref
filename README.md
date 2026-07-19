@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# REF local setup
 
-## Getting Started
+This project is a Next.js app. The default demo mode works without any API keys, so you can get it running locally in a few steps.
 
-First, run the development server:
+## Prerequisites
+
+- Node.js 20 or newer
+- npm
+
+## 1. Install dependencies
+
+From the project root, run:
+
+```bash
+npm install
+```
+
+## 2. Start the app locally
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- http://localhost:3000
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+If port 3000 is already in use, Next.js will usually choose the next available port and print the new URL in the terminal.
 
-## Learn More
+## 3. Build for production (optional)
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run build
+npm run start
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Optional: enable live data
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The app can also use live TXLine data. That is optional. If you want to try it, create a file named `.env.local` in the project root with values like:
 
-## Deploy on Vercel
+```bash
+TXLINE_FIXTURE_ID=your-fixture-id
+TXLINE_API_ORIGIN=https://txline.txodds.com
+TXLINE_API_TOKEN=your-token
+TXLINE_NETWORK=mainnet
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Then restart the dev server.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Troubleshooting
+
+- If you see missing package errors, run `npm install` again.
+- If the app does not start, make sure you are in the project folder and that Node.js is installed.
+- To stop the local server, press `Ctrl+C` in the terminal.
