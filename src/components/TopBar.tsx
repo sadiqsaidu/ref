@@ -27,7 +27,9 @@ export default function TopBar({
           }`}
         />
         <span className="label">{live ? "LIVE" : "OFF"}</span>
-        <span className="label hidden sm:inline">· {sourceLabel}</span>
+        <span className="label hidden sm:inline" suppressHydrationWarning>
+          · {sourceLabel}
+        </span>
       </span>
       <ThemeToggle />
     </header>
