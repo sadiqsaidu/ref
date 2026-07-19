@@ -8,6 +8,7 @@
   --muted: #6b6b70;
   --red: #ff4444;
   --amber: #f0b429;
+  --yellow: #ffd23f;
   --green: #2fd47a;
   --blue: #4d9fff;
 }
@@ -28,6 +29,7 @@
   --color-muted: var(--muted);
   --color-red: var(--red);
   --color-amber: var(--amber);
+  --color-yellow: var(--yellow);
   --color-green: var(--green);
   --color-blue: var(--blue);
   --font-mono: var(--font-jetbrains), ui-monospace, monospace;
@@ -69,4 +71,15 @@ body {
 
 .live-dot {
   animation: pulse-dot 1.6s ease-in-out infinite;
+}
+
+.pulse-soft {
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-dot,
+  .pulse-soft {
+    animation: none;
+  }
 }

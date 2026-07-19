@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import TopBar from "@/components/TopBar";
+import Ledger from "@/components/Ledger";
 import { useMatchStream } from "@/hooks/useMatchStream";
 
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
@@ -17,6 +18,7 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
 
 export default function Dashboard({ network }: { network: string }) {
   const [tab, setTab] = useState<"ledger" | "fairness">("ledger");
+  const [highlightId, setHighlightId] = useState<string | null>(null);
   const [cfg] = useState(() => {
     if (typeof window === "undefined") return { source: "mock", speed: 4 };
     const p = new URLSearchParams(window.location.search);
@@ -45,30 +47,7 @@ export default function Dashboard({ network }: { network: string }) {
         <div
           className={`${tab === "ledger" ? "flex" : "hidden"} min-h-0 flex-col lg:flex lg:border-r lg:border-border`}
         >
-          <Panel title="Decision Ledger">
-            {events.length === 0 ? (
-              <p className="text-xs text-muted">Awaiting events…</p>
-            ) : (
-              <ul className="flex flex-col gap-1 text-xs">
-                {events.map((e) => (
-                  <li key={e.id} className="flex gap-2 tabular-nums">
-                    <span className="w-8 text-muted">
-                      {e.minute !== null ? `${e.minute}'` : "—"}
-                    </span>
-                    <span
-                      className={
-                        e.team === 1 ? "text-amber" : e.team === 2 ? "text-blue" : "text-muted"
-                      }
-                    >
-                      {e.team ? `T${e.team}` : "··"}
-                    </span>
-                    <span>{e.detail}</span>
-                    <span className="ml-auto text-muted">{e.verify.status}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Panel>
+          <Ledger events={events} highlightId={highlightId} />
         </div>
         <div
           className={`${tab === "fairness" ? "flex" : "hidden"} min-h-0 flex-col lg:flex`}
