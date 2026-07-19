@@ -25,15 +25,20 @@ The screen is split into two panels:
 
 Everything below is run from the project root.
 
-## Quick start (no API keys needed)
+## Quick start
 
 ```bash
 npm install
 npm run dev
 ```
 
-Then open **http://localhost:3000** — the app starts in MOCK mode, a scripted
-8-minute dramatic match, so it works with zero configuration.
+Then open **http://localhost:3000** — the app starts in **LIVE mode**: it
+streams the fixture from `TXLINE_FIXTURE_ID` (or one picked in the demo
+drawer), resolves real team names from the day's fixture list, and shows an
+honest stream status in the footer until credentials are configured (see
+below). For a zero-configuration rehearsal there is still a scripted match at
+`http://localhost:3000/?source=mock` — it is never shown unless explicitly
+requested.
 
 The dev and production servers are both **pinned to port 3000**. If the port
 is taken, the command fails with `EADDRINUSE` instead of silently moving to
@@ -76,7 +81,7 @@ The stream source is chosen per-URL:
 
 | Parameter | Values                       | Default | Meaning                                  |
 | --------- | ---------------------------- | ------- | ---------------------------------------- |
-| `source`  | `mock` / `replay` / `live`   | `mock`  | scripted demo / recorded file / TxLINE   |
+| `source`  | `live` / `replay` / `mock`   | `live`  | TxLINE stream / recorded file / scripted |
 | `speed`   | `1`, `4`, `16`, `instant`    | `4`     | playback multiplier (mock + replay)      |
 | `name`    | replay file name             | `match` | reads `data/replays/<name>.json`         |
 | `fixture` | numeric fixture id           | env     | overrides `TXLINE_FIXTURE_ID` for live   |
@@ -84,14 +89,16 @@ The stream source is chosen per-URL:
 Example: `http://localhost:3000/?source=replay&name=semifinal&speed=16`
 
 **Demo drawer**: press **`d`** (desktop) or **triple-tap the REF wordmark**
-(mobile) to open the hidden control drawer — switch source, pick a replay
-file and speed, set the fixture id, see network/connection state, and inject
+(mobile) to open the hidden control drawer — switch source, pick from today's
+fixtures or type a fixture id, choose a replay file and speed, see
+network/connection state, and inject
 single test events (yellow, red, VAR overturn, goal) to rehearse the
 choreography. `Esc` closes it.
 
 ## Environment variables (.env.local)
 
-Only needed for LIVE data and verification. Copy the template and fill it in:
+Required for LIVE data (the default mode) and verification. Copy the template
+and fill it in:
 
 ```bash
 cp .env.example .env.local

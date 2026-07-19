@@ -10,6 +10,7 @@ const USED: [path: string, usedBy: string][] = [
   ["/scores/stream", "live source"],
   ["/scores/historical/{fixtureId}", "record-replay.mts"],
   ["/scores/stat-validation", "verify.ts"],
+  ["/fixtures/snapshot", "team names (api/fixtures)"],
   ["/token/activate", "activate-mainnet.mts"],
 ];
 

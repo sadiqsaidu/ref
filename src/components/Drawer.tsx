@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import type { FixtureInfo } from "@/components/Dashboard";
 import type { Connection, StreamConfig } from "@/hooks/useMatchStream";
 import type { RefKind } from "@/lib/types";
 
@@ -18,6 +19,7 @@ export default function Drawer({
   onCfg,
   connection,
   network,
+  fixtures,
   onInject,
   onClose,
   reduced,
@@ -26,6 +28,7 @@ export default function Drawer({
   onCfg: (patch: Partial<StreamConfig>) => void;
   connection: Connection;
   network: string;
+  fixtures: FixtureInfo[];
   onInject: (kind: RefKind) => void;
   onClose: () => void;
   reduced: boolean;
@@ -101,6 +104,25 @@ export default function Drawer({
           ))}
         </div>
       </div>
+
+      {fixtures.length > 0 && (
+        <div>
+          <div className="label mb-1.5">Today&apos;s Fixtures</div>
+          <div className="flex max-h-40 flex-col overflow-y-auto border border-border">
+            {fixtures.map((f) => (
+              <button
+                key={f.id}
+                onClick={() => onCfg({ source: "live", fixture: f.id })}
+                className={`label min-h-11 cursor-pointer truncate px-2 text-left ${
+                  cfg.fixture === f.id ? "bg-text !text-panel" : "hover:text-text"
+                }`}
+              >
+                {f.p1} v {f.p2}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div>
         <div className="label mb-1.5">Fixture ID</div>

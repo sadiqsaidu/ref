@@ -25,7 +25,10 @@ export default function TopBar({
       >
         REF
       </button>
-      <span className="hidden text-xs text-muted sm:inline">
+      <span
+        className="hidden truncate text-xs text-muted sm:inline"
+        suppressHydrationWarning
+      >
         {matchTitle}
       </span>
       <span className="relative border border-border px-1.5 py-0.5 text-[11px] tabular-nums">

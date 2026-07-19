@@ -2,6 +2,7 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
+import type { TeamMeta } from "@/components/Dashboard";
 import type { RefEvent, RefKind } from "@/lib/types";
 
 type Entry = {
@@ -91,10 +92,12 @@ const Row = memo(
     entry,
     highlighted,
     reduced,
+    teams,
   }: {
     entry: Entry;
     highlighted: boolean;
     reduced: boolean;
+    teams: TeamMeta;
   }) {
     const { event: e } = entry;
     const ref = useRef<HTMLLIElement>(null);
@@ -130,16 +133,16 @@ const Row = memo(
         </span>
         {e.team ? (
           <span
-            className="w-4 shrink-0 border text-center text-[10px] leading-4"
+            className="min-w-4 shrink-0 border px-0.5 text-center text-[10px] leading-4"
             style={{
               color: e.team === 1 ? "var(--amber)" : "var(--blue)",
               borderColor: "currentcolor",
             }}
           >
-            {e.team === 1 ? "A" : "B"}
+            {teams[e.team].code}
           </span>
         ) : (
-          <span className="w-4 shrink-0" />
+          <span className="min-w-4 shrink-0" />
         )}
         <span className="min-w-0 truncate">{entry.text}</span>
         {entry.varState === "open" && (
@@ -190,15 +193,20 @@ const Row = memo(
     a.entry.varState === b.entry.varState &&
     a.entry.event.verify.status === b.entry.event.verify.status &&
     a.highlighted === b.highlighted &&
-    a.reduced === b.reduced,
+    a.reduced === b.reduced &&
+    a.teams === b.teams,
 );
 
 export default function Ledger({
   events,
   highlightId,
+  teams,
+  empty,
 }: {
   events: RefEvent[];
   highlightId: string | null;
+  teams: TeamMeta;
+  empty: string;
 }) {
   const reduced = useReducedMotion() ?? false;
   const [filter, setFilter] = useState("ALL");
@@ -261,7 +269,7 @@ export default function Ledger({
           {visible.length === 0 ? (
             <p className="label flex items-center gap-1.5 p-3">
               <span className="live-dot size-1.5 rounded-full bg-green" />
-              Awaiting first decision
+              {empty}
             </p>
           ) : (
             <ul className="flex flex-col py-1">
@@ -271,6 +279,7 @@ export default function Ledger({
                   entry={entry}
                   highlighted={entry.event.id === highlightId}
                   reduced={reduced}
+                  teams={teams}
                 />
               ))}
             </ul>

@@ -56,6 +56,14 @@ export function useMatchStream(cfg: StreamConfig) {
       buffer.current.push(JSON.parse((m as MessageEvent).data));
       flushTimer.current ??= setTimeout(flush, 50);
     });
+    es.addEventListener("upstream", (m) => {
+      const { up } = JSON.parse((m as MessageEvent).data) as { up: boolean };
+      setConnection((c) =>
+        up
+          ? { status: "open", attempt: 0 }
+          : { status: "reconnecting", attempt: c.attempt + 1 },
+      );
+    });
     es.addEventListener("verify", (m) => {
       const { id, verify } = JSON.parse((m as MessageEvent).data) as {
         id: string;

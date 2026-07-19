@@ -53,6 +53,6 @@ export type RawScore = {
 };
 
 export type MatchSource = {
-  subscribe(cb: (e: RefEvent) => void): void;
+  subscribe(cb: (e: RefEvent) => void, onStatus?: (up: boolean) => void): void;
   close(): void;
 };

@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
+import type { TeamMeta } from "@/components/Dashboard";
 import { loadBaselines } from "@/lib/baselines";
 import { ordinal, percentile, tierFor } from "@/lib/percentile";
 import type { MatchState } from "@/lib/reduce";
@@ -232,10 +233,12 @@ export default function Fairness({
   state,
   events,
   onHighlight,
+  teams,
 }: {
   state: MatchState;
   events: RefEvent[];
   onHighlight: (id: string | null) => void;
+  teams: TeamMeta;
 }) {
   const reduced = useReducedMotion() ?? false;
   const baselines = useMemo(loadBaselines, []);
@@ -262,14 +265,14 @@ export default function Fairness({
       <div className="label shrink-0 border-b border-border px-3 py-2">Fairness</div>
       <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-3">
         <div className="border-b border-border pb-4">
-          <div className="flex items-end justify-between">
-            <span className="label text-amber">Team A</span>
+          <div className="flex items-end justify-between gap-2">
+            <span className="label max-w-[30%] truncate !text-amber">{teams[1].name}</span>
             <span className="bignum text-5xl">
               <Digit value={state.score[1]} color="var(--amber)" />
               <span className="text-muted"> — </span>
               <Digit value={state.score[2]} color="var(--blue)" />
             </span>
-            <span className="label text-blue">Team B</span>
+            <span className="label max-w-[30%] truncate !text-blue">{teams[2].name}</span>
           </div>
           <div className="label mt-2 text-center">
             {state.phase}
@@ -290,8 +293,8 @@ export default function Fairness({
           <div className="label mb-2">VAR</div>
           <div className="grid grid-cols-[1fr_2.5rem_2.5rem] gap-y-1 border border-border p-2 text-xs tabular-nums">
             <span />
-            <span className="label text-center !text-amber">A</span>
-            <span className="label text-center !text-blue">B</span>
+            <span className="label text-center !text-amber">{teams[1].code}</span>
+            <span className="label text-center !text-blue">{teams[2].code}</span>
             <span className="label">Reviews for</span>
             <span className="text-center">{a.varFor}</span>
             <span className="text-center">{b.varFor}</span>
@@ -302,7 +305,7 @@ export default function Fairness({
             <span className="text-center">{a.varOverturned}</span>
             <span className="text-center">{b.varOverturned}</span>
             <span className="label col-span-3 mt-1 border-t border-border pt-1">
-              Last outcome: {lastVar ? `${lastVar.detail}${lastVar.team ? ` (${lastVar.team === 1 ? "A" : "B"})` : ""}` : "—"}
+              Last outcome: {lastVar ? `${lastVar.detail}${lastVar.team ? ` (${teams[lastVar.team].code})` : ""}` : "—"}
             </span>
           </div>
         </div>

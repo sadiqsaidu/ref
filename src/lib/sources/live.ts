@@ -6,7 +6,7 @@ export function liveSource(fixtureId: string): MatchSource {
   const ctrl = new AbortController();
   let closed = false;
   return {
-    subscribe(cb: (e: RefEvent) => void) {
+    subscribe(cb: (e: RefEvent) => void, onStatus?: (up: boolean) => void) {
       const map = createMapper();
       const seen = new Set<string>();
       let lastEventId: string | undefined;
@@ -23,6 +23,7 @@ export function liveSource(fixtureId: string): MatchSource {
               signal: ctrl.signal,
             });
             backoff = 1000;
+            onStatus?.(true);
             for await (const msg of parseSse(res.body!)) {
               if (msg.id) lastEventId = msg.id;
               if (!msg.data || msg.event?.toLowerCase() === "heartbeat") continue;
@@ -35,6 +36,7 @@ export function liveSource(fixtureId: string): MatchSource {
             }
           } catch (e) {
             if (closed) return;
+            onStatus?.(false);
             console.error("live stream:", e instanceof Error ? e.message : e);
           }
           await new Promise((r) => setTimeout(r, backoff));
