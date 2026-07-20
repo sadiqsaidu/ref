@@ -1,24 +1,48 @@
 import { normalizeOdds, type OddsTick } from "../odds";
 import { apiFetch, parseSse } from "../txline/api";
 
-// TODO: real TxLINE StablePrice odds-stream path. Paste the exact route from
-// your `verify-endpoints` output here (e.g. `/odds/stream?fixtureId=${id}`).
-// While this is empty the app uses the simulated walk (createOddsMock), clearly
-// badged SIMULATED — nothing fake is ever presented as real consensus.
-export const ODDS_STREAM_PATH = "";
+// Real TxLINE StablePrice odds stream (per the published SDK). Live matches
+// only — completed matches have no direct historical-odds endpoint.
+export const ODDS_STREAM_PATH = "/odds/stream?fixtureId=${id}";
 
-// Field names the tick JSON is expected to expose. Adjust to match docs.yaml
-// when wiring the real feed; only this file changes.
+// StablePrice payload: a bookmaker line with PriceNames + decimal Prices.
 type RawOdds = {
   Ts?: number;
   Minute?: number;
-  OddsHome?: number;
-  OddsDraw?: number;
-  OddsAway?: number;
+  InRunning?: boolean;
+  SuperOddsType?: string;
+  MarketPeriod?: string;
+  PriceNames?: string[];
+  Prices?: number[];
   [k: string]: unknown;
 };
 
 const toMs = (t: number) => (t < 1e12 ? t * 1000 : t);
+const HOME = /^(1|home|h)$/i;
+const DRAW = /^(x|draw|d|tie)$/i;
+const AWAY = /^(2|away|a)$/i;
+
+// pull the 3-way match-odds line (home/draw/away decimals) from a tick
+function matchOdds(raw: RawOdds): [number, number, number] | null {
+  const names = raw.PriceNames;
+  const prices = raw.Prices;
+  if (!names || !prices || names.length !== prices.length) return null;
+  let h: number | undefined;
+  let d: number | null = null;
+  let a: number | undefined;
+  for (let i = 0; i < names.length; i++) {
+    if (HOME.test(names[i])) h = prices[i];
+    else if (DRAW.test(names[i])) d = prices[i];
+    else if (AWAY.test(names[i])) a = prices[i];
+  }
+  if (h === undefined || a === undefined) {
+    // fall back to positional [home, draw, away] / [home, away]
+    if (prices.length === 3) return [prices[0], prices[1], prices[2]];
+    if (prices.length === 2) return [prices[0], Number.NaN, prices[1]];
+    return null;
+  }
+  return [h, d ?? Number.NaN, a];
+}
 
 export function hasLiveOdds(): boolean {
   return ODDS_STREAM_PATH.length > 0;
@@ -48,11 +72,13 @@ export function oddsLive(fixtureId: string): OddsStream {
             for await (const msg of parseSse(res.body!)) {
               if (!msg.data || msg.event?.toLowerCase() === "heartbeat") continue;
               const raw = JSON.parse(msg.data) as RawOdds;
-              if (raw.OddsHome === undefined || raw.OddsAway === undefined) continue;
+              const odds = matchOdds(raw);
+              if (!odds) continue;
+              const [h, d, a] = odds;
               const t = normalizeOdds(
-                raw.OddsHome,
-                raw.OddsDraw ?? null,
-                raw.OddsAway,
+                h,
+                Number.isNaN(d) ? null : d,
+                a,
                 raw.Ts ? toMs(raw.Ts) : Date.now(),
                 raw.Minute ?? 0,
               );

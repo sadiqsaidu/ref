@@ -1,6 +1,6 @@
-import type { MatchSource, RefEvent } from "../types";
+import type { MatchSource, Players, RefEvent } from "../types";
 import { apiFetch, parseRecords, TxlineApiError } from "../txline/api";
-import { normalizeRaw } from "../txline/map";
+import { aggregatePlayers, normalizeRaw } from "../txline/map";
 import { playRaw } from "./play";
 
 export function historySource(fixtureId: string, speed: number): MatchSource {
@@ -11,6 +11,7 @@ export function historySource(fixtureId: string, speed: number): MatchSource {
       cb: (e: RefEvent) => void,
       onStatus?: (up: boolean) => void,
       onError?: (message: string) => void,
+      onPlayers?: (players: Players) => void,
     ) {
       apiFetch(`/scores/historical/${fixtureId}`)
         .then((r) => r.text())
@@ -22,6 +23,7 @@ export function historySource(fixtureId: string, speed: number): MatchSource {
             .sort((a, b) => a.seq - b.seq);
           if (records.length === 0) throw new Error("no score records in response");
           onStatus?.(true);
+          onPlayers?.(aggregatePlayers(records));
           inner = playRaw(records, speed, true);
           inner.subscribe(cb);
         })

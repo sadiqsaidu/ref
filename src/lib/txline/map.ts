@@ -1,4 +1,4 @@
-import type { RawScore, RefEvent, RefKind } from "../types";
+import type { PlayerLine, Players, RawScore, RefEvent, RefKind } from "../types";
 
 const PHASES: Record<number, string> = {
   1: "NS", 2: "H1", 3: "HT", 4: "H2", 5: "F", 6: "WET", 7: "ET1", 8: "HTET",
@@ -78,6 +78,46 @@ export function normalizeRaw(raw: Record<string, unknown>): RawScore {
     }
   }
   return out as RawScore;
+}
+
+type RawPlayer = Record<string, unknown>;
+const num = (o: RawPlayer, ...keys: string[]) => {
+  for (const k of keys) {
+    const v = o[k] ?? o[k.charAt(0).toUpperCase() + k.slice(1)];
+    if (v !== undefined && Number.isFinite(Number(v))) return Number(v);
+  }
+  return 0;
+};
+
+// scorers & bookings from the feed's per-player stat snapshots. PlayerStats are
+// cumulative, so the LATEST snapshot per player wins — this way an overturned
+// goal (a later snapshot with goals back to 0) correctly drops the scorer.
+export function aggregatePlayers(records: RawScore[]): Players {
+  const acc: Record<1 | 2, Map<string, PlayerLine>> = { 1: new Map(), 2: new Map() };
+  for (const r of records) {
+    const ps = (r as Record<string, unknown>).PlayerStats as
+      | { Participant1?: Record<string, RawPlayer>; Participant2?: Record<string, RawPlayer> }
+      | undefined;
+    if (!ps) continue;
+    for (const team of [1, 2] as const) {
+      const side = team === 1 ? ps.Participant1 : ps.Participant2;
+      if (!side) continue;
+      for (const [key, stat] of Object.entries(side)) {
+        const name = /^\d+$/.test(key.trim()) ? `#${key}` : key;
+        acc[team].set(name, {
+          name,
+          goals: num(stat, "goals"),
+          yellows: num(stat, "yellowCards"),
+          reds: num(stat, "redCards"),
+        });
+      }
+    }
+  }
+  const build = (m: Map<string, PlayerLine>) =>
+    [...m.values()]
+      .filter((p) => p.goals > 0 || p.yellows > 0 || p.reds > 0)
+      .sort((a, b) => b.goals - a.goals || b.reds - a.reds || b.yellows - a.yellows);
+  return { 1: build(acc[1]), 2: build(acc[2]) };
 }
 
 type Delta = { base: number; delta: number };

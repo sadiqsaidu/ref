@@ -9,7 +9,7 @@ import type { OddsTick } from "@/lib/odds";
 import { loadBaselines } from "@/lib/baselines";
 import { ordinal, percentile, tierFor } from "@/lib/percentile";
 import type { MatchState } from "@/lib/reduce";
-import type { RefEvent, RefKind } from "@/lib/types";
+import type { Players, RefEvent, RefKind } from "@/lib/types";
 
 function useCountUp(target: number, reduced: boolean): number {
   const [value, setValue] = useState(target);
@@ -257,20 +257,20 @@ export default function Fairness({
   events,
   onHighlight,
   teams,
+  players,
   kickoff,
   matchKey,
   oddsSeries,
-  oddsSimulated,
   replay,
 }: {
   state: MatchState;
   events: RefEvent[];
   onHighlight: (id: string | null) => void;
   teams: TeamMeta;
+  players: Players;
   kickoff?: number;
   matchKey?: string;
   oddsSeries: OddsTick[];
-  oddsSimulated: boolean;
   replay?: { active: boolean; onToggle: () => void };
 }) {
   const reduced = useReducedMotion() ?? false;
@@ -377,15 +377,53 @@ export default function Fairness({
           )}
         </motion.div>
 
-        <motion.div variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } }}>
-          <MarketPulse
-            oddsSeries={oddsSeries}
-            events={events}
-            teams={teams}
-            simulated={oddsSimulated}
-            onHighlight={onHighlight}
-          />
-        </motion.div>
+        {oddsSeries.length > 0 && (
+          <motion.div variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } }}>
+            <MarketPulse
+              oddsSeries={oddsSeries}
+              events={events}
+              teams={teams}
+              onHighlight={onHighlight}
+            />
+          </motion.div>
+        )}
+
+        {(players[1].length > 0 || players[2].length > 0) && (
+          <motion.div variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } }}>
+            <Section accent="var(--green)" title="Scorers & Bookings" />
+            <div className="grid grid-cols-2 gap-2">
+              {([1, 2] as const).map((t) => (
+                <div key={t} className="border border-border p-2">
+                  <div
+                    className="label mb-1 truncate"
+                    style={{ color: t === 1 ? "var(--amber)" : "var(--blue)" }}
+                  >
+                    {teams[t].name}
+                  </div>
+                  {players[t].length === 0 ? (
+                    <div className="label !text-[10px]">—</div>
+                  ) : (
+                    <ul className="flex flex-col gap-0.5 text-xs">
+                      {players[t].map((p) => (
+                        <li key={p.name} className="flex items-center gap-1">
+                          <span className="min-w-0 flex-1 truncate">{p.name}</span>
+                          {p.goals > 0 && (
+                            <span className="text-green">
+                              {"⚽".repeat(Math.min(p.goals, 3))}
+                              {p.goals > 3 ? `×${p.goals}` : ""}
+                            </span>
+                          )}
+                          {p.yellows > 0 && <span className="inline-block h-3 w-2 rounded-[1px]" style={{ background: "var(--yellow)" }} />}
+                          {p.reds > 0 && <span className="inline-block h-3 w-2 rounded-[1px]" style={{ background: "var(--red)" }} />}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
 
         <motion.div variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } }}>
           <Section accent="var(--amber)" title="Discipline Mirror" />

@@ -28,8 +28,9 @@ quantifies what each refereeing decision cost, using the betting market as a
 **neutral, independent observer** — never as a place to bet. The app has zero
 betting functionality; it neither places, brokers, nor displays wagers.
 
-Each odds tick is normalized to de-vigged implied win probabilities (Team A,
-draw, Team B) and plotted over match time. Vertical hairlines mark major
+It reads the real TxLINE StablePrice odds stream (`/api/odds/stream`),
+normalizes each tick to de-vigged implied win probabilities (Team A, draw,
+Team B), and plots them over match time. Vertical hairlines mark major
 decisions; for each, impact is the change in the affected team's win
 probability from 60 seconds before to 60 seconds after (e.g. `RED CARD ·
 −14.2 PTS`). The framing is deliberately anti-conspiracy: a market that
@@ -39,10 +40,21 @@ flat relative to its post-move, one muted line reads *"consensus odds reprice
 after decisions, not before — consistent with fair play."* There is no
 accusatory variant; if the condition does not hold, nothing is shown.
 
-Until a real StablePrice odds path is wired (one TODO const in
-`src/lib/sources/oddsLive.ts`), the chart runs a simulated walk driven by the
-match's real decisions, clearly badged **SIMULATED** so nothing synthetic is
-ever presented as real consensus.
+MARKET PULSE is shown **only for in-progress (live) matches**, where real
+consensus odds are available — completed matches have no direct historical-odds
+endpoint, and REF never simulates odds. The section is simply hidden on
+finished matches.
+
+## Competitions, scorers & bookings
+
+- The top-bar **competition dropdown** (and the chips in the match browser) are
+  built dynamically from your feed: REF scans a rolling window of fixtures,
+  groups them by competition, and lists every league your token returns (World
+  Cup pinned first, then Premier League, La Liga, Ligue 1, … as available).
+- The FAIRNESS panel shows a **Scorers & Bookings** block per team, parsed from
+  the feed's per-player stats (latest snapshot wins, so an overturned goal drops
+  its scorer). Referee/official data is not exposed by this feed, so it is not
+  shown.
 
 ## Prerequisites
 

@@ -2,26 +2,23 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import Flag from "@/components/Flag";
 import ThemeToggle from "@/components/ThemeToggle";
+
+const HERO_FIXTURE = "18222446";
 
 const fade = {
   hidden: { opacity: 0, y: 18 },
   show: { opacity: 1, y: 0, transition: { duration: 0.45 } },
 };
 
-function Panel({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <div className={`rounded-[4px] border border-border bg-panel ${className}`}>
-      {children}
-    </div>
-  );
-}
+type Summary = {
+  teams: { 1: string; 2: string };
+  score: { 1: number; 2: number };
+  phase: string;
+  keyEvents: { minute: number | null; team: 1 | 2 | null; kind: string; detail: string }[];
+};
 
 export default function Landing() {
   return (
@@ -43,7 +40,6 @@ export default function Landing() {
       </header>
 
       <main className="mx-auto max-w-5xl px-4 pb-24">
-        {/* Hero */}
         <motion.section
           initial="hidden"
           animate="show"
@@ -92,44 +88,8 @@ export default function Landing() {
           </motion.div>
         </motion.section>
 
-        {/* Features */}
-        <section className="grid gap-4 md:grid-cols-3">
-          {[
-            {
-              accent: "var(--green)",
-              title: "Decision Ledger",
-              body: "A newest-first, immutable log of every call. Minute stamp, team, plain-language line, and a verification mark linking to the on-chain proof.",
-            },
-            {
-              accent: "var(--amber)",
-              title: "Fairness",
-              body: "Both teams' discipline mirrored side by side — cards, foul proxy, corners, VAR — each shown as a percentile against tournament baselines.",
-            },
-            {
-              accent: "var(--blue)",
-              title: "Market Pulse",
-              body: "Consensus win-probability over match time. Quantifies what each decision cost using the betting market as a neutral observer — zero betting features.",
-            },
-          ].map((f, i) => (
-            <motion.div
-              key={f.title}
-              initial={{ opacity: 0, y: 18 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.4, delay: i * 0.08 }}
-            >
-              <Panel className="row-hover h-full p-4">
-                <div className="label mb-2 flex items-center gap-1.5">
-                  <span className="size-1.5" style={{ background: f.accent }} />
-                  {f.title}
-                </div>
-                <p className="text-sm leading-relaxed text-muted">{f.body}</p>
-              </Panel>
-            </motion.div>
-          ))}
-        </section>
+        <FeatureCards />
 
-        {/* Market Pulse framing */}
         <motion.section
           initial={{ opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -137,12 +97,14 @@ export default function Landing() {
           transition={{ duration: 0.4 }}
           className="mt-4"
         >
-          <Panel className="p-5">
-            <div className="label mb-2 flex items-center gap-1.5">
+          <div className="overflow-hidden rounded-[4px] border border-blue">
+            <div className="stripes flex items-center gap-1.5 border-b border-blue bg-[color-mix(in_srgb,var(--blue)_12%,transparent)] px-4 py-2">
               <span className="size-1.5" style={{ background: "var(--blue)" }} />
-              Why Market Pulse
+              <span className="font-display text-xs font-bold uppercase tracking-wider text-blue">
+                Why Market Pulse
+              </span>
             </div>
-            <p className="max-w-3xl text-sm leading-relaxed text-muted">
+            <p className="max-w-3xl p-4 text-sm leading-relaxed text-muted">
               A crowd that reprices a match <em>after</em> a red card — not before —
               is evidence the call was not known in advance. REF reads consensus
               odds as an anti-conspiracy instrument: if the market only reacts once
@@ -150,41 +112,10 @@ export default function Landing() {
               places, brokers, or displays bets. Odds are used purely as a neutral,
               independent measure of impact.
             </p>
-          </Panel>
+          </div>
         </motion.section>
 
-        {/* How to use */}
-        <section id="how" className="mt-16 scroll-mt-16">
-          <h2 className="font-display text-2xl font-bold tracking-tight">
-            How to use it
-          </h2>
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
-            {[
-              ["01", "Pick a match", "Open the dashboard — it starts on the most recent match. Press M or tap MATCHES to browse the whole tournament by flag."],
-              ["02", "Read the ledger", "Scan every decision in order. Filter to CARDS, VAR, or GOALS. Green ✓ marks are anchored to on-chain proofs you can open."],
-              ["03", "Check fairness & pulse", "See the discipline mirror and percentile chips, then the Market Pulse chart — hover a decision marker to see what it cost in win-probability points."],
-              ["04", "Replay it", "Hit ▶ REPLAY MATCH to watch the whole thing unfold as a highlight reel: rolling score, growing bars, and the market repricing live."],
-            ].map(([n, title, body], i) => (
-              <motion.div
-                key={n}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: i * 0.06 }}
-              >
-                <Panel className="flex h-full gap-4 p-4">
-                  <span className="font-display text-2xl font-bold text-muted">{n}</span>
-                  <div>
-                    <div className="font-display text-sm font-bold uppercase tracking-wide">
-                      {title}
-                    </div>
-                    <p className="mt-1 text-sm leading-relaxed text-muted">{body}</p>
-                  </div>
-                </Panel>
-              </motion.div>
-            ))}
-          </div>
-        </section>
+        <HowToUse />
 
         <motion.div
           initial={{ opacity: 0 }}
@@ -209,40 +140,174 @@ export default function Landing() {
   );
 }
 
-function HeroIllustration() {
-  const rows: [string, string, string, string][] = [
-    ["71'", "ARG", "RED CARD", "var(--red)"],
-    ["58'", "ARG", "VAR · OVERTURNED", "var(--amber)"],
-    ["24'", "ARG", "GOAL", "var(--green)"],
-    ["11'", "EGY", "FREE KICK · DANGER", "var(--border)"],
-  ];
+const FEATURES = [
+  {
+    accent: "var(--green)",
+    glyph: "▤",
+    title: "Decision Ledger",
+    body: "A newest-first, immutable log of every call. Minute stamp, team, plain-language line, and a verification mark linking to the on-chain proof.",
+  },
+  {
+    accent: "var(--amber)",
+    glyph: "◫",
+    title: "Fairness",
+    body: "Both teams' discipline mirrored side by side — cards, foul proxy, corners, VAR — each shown as a percentile against tournament baselines.",
+  },
+  {
+    accent: "var(--blue)",
+    glyph: "◭",
+    title: "Market Pulse",
+    body: "Consensus win-probability over match time. Quantifies what each decision cost using the betting market as a neutral observer — zero betting.",
+  },
+];
+
+function FeatureCards() {
   return (
-    <Panel className="overflow-hidden">
+    <section className="grid gap-4 md:grid-cols-3">
+      {FEATURES.map((f, i) => (
+        <motion.div
+          key={f.title}
+          initial={{ opacity: 0, y: 18 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.4, delay: i * 0.08 }}
+          whileHover={{ y: -4 }}
+          className="overflow-hidden rounded-[4px] border"
+          style={{ borderColor: f.accent }}
+        >
+          <div
+            className="stripes flex items-center gap-2 border-b px-3 py-2"
+            style={{
+              borderColor: f.accent,
+              background: `color-mix(in srgb, ${f.accent} 12%, transparent)`,
+            }}
+          >
+            <span className="font-display text-lg font-bold" style={{ color: f.accent }}>
+              {f.glyph}
+            </span>
+            <span
+              className="font-display text-sm font-bold uppercase tracking-wider"
+              style={{ color: f.accent }}
+            >
+              {f.title}
+            </span>
+          </div>
+          <p className="p-4 text-sm leading-relaxed text-muted">{f.body}</p>
+        </motion.div>
+      ))}
+    </section>
+  );
+}
+
+const STEPS: [string, string, string, string][] = [
+  ["01", "var(--green)", "Pick a match", "Open the dashboard — it starts on the most recent match. Switch competition in the top bar, or press M to browse the whole season by flag."],
+  ["02", "var(--yellow)", "Read the ledger", "Scan every decision in order. Filter to CARDS, VAR, or GOALS. Green ✓ marks are anchored to on-chain proofs you can open."],
+  ["03", "var(--amber)", "Check fairness & scorers", "See the discipline mirror, percentile chips, and who scored or got booked. On live matches, Market Pulse shows what each call cost."],
+  ["04", "var(--blue)", "Replay it", "Hit ▶ REPLAY MATCH to watch the whole thing unfold as a highlight reel: rolling score, growing bars, and big-moment banners."],
+];
+
+function HowToUse() {
+  return (
+    <section id="how" className="mt-16 scroll-mt-16">
+      <h2 className="font-display text-2xl font-bold tracking-tight">How to use it</h2>
+      <div className="mt-6 grid gap-4 md:grid-cols-2">
+        {STEPS.map(([n, accent, title, body], i) => (
+          <motion.div
+            key={n}
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4, delay: i * 0.06 }}
+            whileHover={{ x: 4 }}
+            className="flex h-full gap-4 rounded-[4px] border border-border p-4"
+            style={{ borderLeft: `3px solid ${accent}` }}
+          >
+            <span
+              className="flex size-9 shrink-0 items-center justify-center rounded-[4px] font-display text-sm font-bold"
+              style={{ background: `color-mix(in srgb, ${accent} 16%, transparent)`, color: accent }}
+            >
+              {n}
+            </span>
+            <div>
+              <div className="font-display text-sm font-bold uppercase tracking-wide">{title}</div>
+              <p className="mt-1 text-sm leading-relaxed text-muted">{body}</p>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+const EVENT_ACCENT: Record<string, string> = {
+  goal: "var(--green)",
+  red: "var(--red)",
+  second_yellow: "var(--red)",
+  var_end: "var(--amber)",
+};
+
+function eventText(kind: string, detail: string): string {
+  if (kind === "goal") return detail === "PENALTY" ? "GOAL · PENALTY" : "GOAL";
+  if (kind === "red") return "RED CARD";
+  if (kind === "second_yellow") return "SECOND YELLOW";
+  if (kind === "var_end") return `VAR · ${detail.replace(/.*· /, "")}`;
+  return detail;
+}
+
+function HeroIllustration() {
+  const [data, setData] = useState<Summary | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    fetch(`/api/match-summary/${HERO_FIXTURE}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((d: Summary) => setData(d))
+      .catch(() => setFailed(true));
+  }, []);
+
+  const t1 = data?.teams[1] ?? "Team A";
+  const t2 = data?.teams[2] ?? "Team B";
+  const c1 = t1.slice(0, 3).toUpperCase();
+  const c2 = t2.slice(0, 3).toUpperCase();
+  const rows = data?.keyEvents ?? [];
+
+  return (
+    <div className="overflow-hidden rounded-[4px] border border-border bg-panel">
       <div className="stripes flex items-center gap-2 border-b border-border px-3 py-2">
         <span className="flex items-center overflow-hidden rounded-[4px] border border-border font-display text-xs font-bold">
-          <span className="bg-amber px-1.5 py-0.5" style={{ color: "var(--panel)" }}>
-            ARG
+          <span className="flex items-center gap-1 bg-amber px-1.5 py-0.5" style={{ color: "var(--panel)" }}>
+            {c1}
           </span>
-          <span className="px-2 tabular-nums">2 : 1</span>
+          <span className="px-2 tabular-nums">
+            {data ? `${data.score[1]} : ${data.score[2]}` : "· : ·"}
+          </span>
           <span className="bg-blue px-1.5 py-0.5" style={{ color: "var(--panel)" }}>
-            EGY
+            {c2}
           </span>
         </span>
-        <span className="label">F · 90&apos;</span>
-        <span className="ml-auto flex items-center gap-1.5">
-          <span className="live-dot size-1.5 rounded-full bg-green" />
-          <span className="label">LIVE</span>
+        <span className="label truncate">
+          {failed ? "example" : `${t1} v ${t2}`}
         </span>
+        <span className="label ml-auto">{data?.phase ?? "F"}</span>
       </div>
-      <div className="grid grid-cols-2">
-        <div className="border-r border-border">
-          {rows.map(([min, team, text, accent], i) => (
+      <div className="flex items-center gap-2 border-b border-border px-3 py-2">
+        <Flag name={t1} />
+        <span className="min-w-0 flex-1 truncate font-display text-xs font-bold uppercase tracking-wide">
+          {t1} <span className="text-muted">v</span> {t2}
+        </span>
+        <Flag name={t2} />
+      </div>
+      {rows.length > 0 ? (
+        rows.map((e, i) => {
+          const accent = EVENT_ACCENT[e.kind] ?? "var(--border)";
+          const code = e.team === 1 ? c1 : e.team === 2 ? c2 : "";
+          return (
             <motion.div
               key={i}
               initial={{ opacity: 0, x: -12 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 + i * 0.12, duration: 0.3 }}
-              className="flex items-center gap-2 border-b border-border px-2.5 py-2 text-[11px]"
+              transition={{ delay: 0.2 + i * 0.12, duration: 0.3 }}
+              className="flex items-center gap-2 border-b border-border px-3 py-2 text-[11px]"
               style={{ borderLeft: `2px solid ${accent}` }}
             >
               <span
@@ -252,47 +317,20 @@ function HeroIllustration() {
                   color: accent === "var(--border)" ? "var(--muted)" : "var(--panel)",
                 }}
               >
-                <span className="inline-block skew-x-6 tabular-nums">{min}</span>
+                <span className="inline-block skew-x-6 tabular-nums">
+                  {e.minute !== null ? `${e.minute}'` : "—"}
+                </span>
               </span>
-              <span className="truncate">{text}</span>
+              {code && <span className="text-muted">{code}</span>}
+              <span className="truncate">{eventText(e.kind, e.detail)}</span>
             </motion.div>
-          ))}
+          );
+        })
+      ) : (
+        <div className="label p-4">
+          {failed ? "live example unavailable here" : "loading match…"}
         </div>
-        <div className="flex flex-col justify-center p-3">
-          <div className="label mb-1 flex items-center gap-1.5">
-            <span className="size-1.5 bg-green" />
-            Market Pulse
-          </div>
-          <svg viewBox="0 0 120 60" className="w-full">
-            {[15, 30, 45].map((yy) => (
-              <line key={yy} x1="0" y1={yy} x2="120" y2={yy} stroke="var(--border)" strokeDasharray="2 3" />
-            ))}
-            <line x1="70" y1="0" x2="70" y2="60" stroke="var(--red)" strokeOpacity="0.5" />
-            <motion.path
-              d="M0 34 L20 32 L40 33 L55 24 L70 26 L72 40 L95 44 L120 46"
-              fill="none"
-              stroke="var(--amber)"
-              strokeWidth="2"
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{ duration: 1.4, delay: 0.5 }}
-            />
-            <motion.path
-              d="M0 30 L20 32 L40 31 L55 40 L70 38 L72 22 L95 18 L120 15"
-              fill="none"
-              stroke="var(--blue)"
-              strokeWidth="2"
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{ duration: 1.4, delay: 0.5 }}
-            />
-          </svg>
-          <div className="mt-1 flex justify-between">
-            <span className="label !text-red">RED · −14 PTS</span>
-            <span className="label">ARG</span>
-          </div>
-        </div>
-      </div>
-    </Panel>
+      )}
+    </div>
   );
 }

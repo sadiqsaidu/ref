@@ -4,7 +4,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { eventKey } from "@/lib/eventKey";
 import { ODDS_CAP, type OddsTick } from "@/lib/odds";
 import { reduce } from "@/lib/reduce";
-import type { RefEvent, Verify } from "@/lib/types";
+import type { Players, RefEvent, Verify } from "@/lib/types";
+
+const NO_PLAYERS: Players = { 1: [], 2: [] };
 
 export type StreamConfig = {
   source: string;
@@ -23,7 +25,7 @@ export type Connection = {
 export function useMatchStream(cfg: StreamConfig) {
   const [events, setEvents] = useState<RefEvent[]>([]);
   const [oddsSeries, setOddsSeries] = useState<OddsTick[]>([]);
-  const [oddsSimulated, setOddsSimulated] = useState(true);
+  const [players, setPlayers] = useState<Players>(NO_PLAYERS);
   const [connection, setConnection] = useState<Connection>({
     status: "connecting",
     attempt: 0,
@@ -37,6 +39,7 @@ export function useMatchStream(cfg: StreamConfig) {
   useEffect(() => {
     setEvents([]);
     setOddsSeries([]);
+    setPlayers(NO_PLAYERS);
     setConnection({ status: "connecting", attempt: 0 });
     buffer.current = [];
     oddsBuffer.current = [];
@@ -98,8 +101,8 @@ export function useMatchStream(cfg: StreamConfig) {
       oddsBuffer.current.push(JSON.parse((m as MessageEvent).data));
       scheduleFlush();
     });
-    es.addEventListener("oddsmeta", (m) => {
-      setOddsSimulated(JSON.parse((m as MessageEvent).data).simulated !== false);
+    es.addEventListener("players", (m) => {
+      setPlayers(JSON.parse((m as MessageEvent).data) as Players);
     });
     es.addEventListener("upstream", (m) => {
       const { up } = JSON.parse((m as MessageEvent).data) as { up: boolean };
@@ -130,5 +133,5 @@ export function useMatchStream(cfg: StreamConfig) {
   }, [source, speed, name, fixture, kickoff]);
 
   const state = useMemo(() => reduce(events), [events]);
-  return { events, state, connection, oddsSeries, oddsSimulated };
+  return { events, state, connection, oddsSeries, players };
 }

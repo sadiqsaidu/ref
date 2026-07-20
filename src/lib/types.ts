@@ -52,11 +52,21 @@ export type RawScore = {
   [k: string]: unknown;
 };
 
+export type PlayerLine = {
+  name: string;
+  goals: number;
+  yellows: number;
+  reds: number;
+};
+
+export type Players = { 1: PlayerLine[]; 2: PlayerLine[] };
+
 export type MatchSource = {
   subscribe(
     cb: (e: RefEvent) => void,
     onStatus?: (up: boolean) => void,
     onError?: (message: string) => void,
+    onPlayers?: (players: Players) => void,
   ): void;
   close(): void;
 };

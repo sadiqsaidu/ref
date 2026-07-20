@@ -3,7 +3,6 @@ import { historySource } from "@/lib/sources/history";
 import { liveSource } from "@/lib/sources/live";
 import { replaySource } from "@/lib/sources/replay";
 import { oddsLive, hasLiveOdds } from "@/lib/sources/oddsLive";
-import { createOddsMock } from "@/lib/sources/oddsMock";
 import { verifyEvent } from "@/lib/verify";
 
 export const dynamic = "force-dynamic";
@@ -33,9 +32,8 @@ export async function GET(req: Request) {
         : replaySource(name, speed);
 
   const verifiable = sourceName === "live" || sourceName === "history";
-  const useLiveOdds = sourceName === "live" && hasLiveOdds();
-  const oddsMock = useLiveOdds ? null : createOddsMock(Number(fixture) || 1);
-  const oddsStream = useLiveOdds ? oddsLive(fixture) : null;
+  // real consensus odds are only meaningful for an in-progress match
+  const oddsStream = sourceName === "live" && hasLiveOdds() ? oddsLive(fixture) : null;
 
   let running = 0;
   const queue: (() => void)[] = [];
@@ -63,16 +61,10 @@ export async function GET(req: Request) {
         } catch {}
       };
       write("retry: 3000\n\n");
-      write(`event: oddsmeta\ndata: ${JSON.stringify({ simulated: !useLiveOdds })}\n\n`);
 
       source.subscribe(
         (e) => {
           write(`id: ${e.id}\nevent: ref\ndata: ${JSON.stringify(e)}\n\n`);
-          if (oddsMock) {
-            for (const t of oddsMock.push(e)) {
-              write(`event: odds\ndata: ${JSON.stringify(t)}\n\n`);
-            }
-          }
           if (verifiable && VERIFIABLE.includes(e.kind)) {
             schedule(() =>
               verifyEvent(e, fixture).then((verify) => {
@@ -94,6 +86,7 @@ export async function GET(req: Request) {
             controller.close();
           } catch {}
         },
+        (players) => write(`event: players\ndata: ${JSON.stringify(players)}\n\n`),
       );
 
       oddsStream?.subscribe((t) => write(`event: odds\ndata: ${JSON.stringify(t)}\n\n`));

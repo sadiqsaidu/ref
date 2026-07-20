@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import type { Competition } from "@/components/Dashboard";
 import Flag from "@/components/Flag";
 
 export type WcMatch = {
@@ -8,12 +9,16 @@ export type WcMatch = {
   p1: string;
   p2: string;
   competition: string;
+  competitionId?: number;
   startTime: number;
 };
 
 export default function MatchBrowser({
   open,
   matches,
+  competitions,
+  competitionId,
+  onCompetition,
   selectedId,
   onSelect,
   onClose,
@@ -21,6 +26,9 @@ export default function MatchBrowser({
 }: {
   open: boolean;
   matches: WcMatch[] | null;
+  competitions: Competition[];
+  competitionId: number | null;
+  onCompetition: (id: number) => void;
   selectedId: string | undefined;
   onSelect: (m: WcMatch) => void;
   onClose: () => void;
@@ -61,20 +69,24 @@ export default function MatchBrowser({
                 ESC
               </button>
             </div>
-            <div className="flex shrink-0 gap-1.5 overflow-x-auto border-b border-border px-3 py-2">
-              <span className="label shrink-0 rounded-[4px] border border-green bg-[color-mix(in_srgb,var(--green)_10%,transparent)] px-2 py-1 !text-green">
-                World Cup 2026
-              </span>
-              {["Premier League", "La Liga", "Serie A"].map((c) => (
-                <span
-                  key={c}
-                  title="Not available on the free tier yet"
-                  className="label shrink-0 cursor-not-allowed rounded-[4px] border border-border px-2 py-1 opacity-40"
-                >
-                  {c} · soon
-                </span>
-              ))}
-            </div>
+            {competitions.length > 0 && (
+              <div className="flex shrink-0 gap-1.5 overflow-x-auto border-b border-border px-3 py-2">
+                {competitions.map((c) => (
+                  <motion.button
+                    key={c.id}
+                    whileTap={reduced ? undefined : { scale: 0.95 }}
+                    onClick={() => onCompetition(c.id)}
+                    className={`label shrink-0 cursor-pointer rounded-[4px] border px-2 py-1 ${
+                      c.id === competitionId
+                        ? "border-green bg-[color-mix(in_srgb,var(--green)_10%,transparent)] !text-green"
+                        : "border-border hover:text-text"
+                    }`}
+                  >
+                    {c.name} ({c.count})
+                  </motion.button>
+                ))}
+              </div>
+            )}
             <div className="min-h-0 flex-1 overflow-y-auto">
               {matches === null && !failed && (
                 <div className="flex flex-col gap-2 p-3">
