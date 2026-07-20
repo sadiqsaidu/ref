@@ -18,7 +18,8 @@ export type Match = {
   startTime: number;
 };
 
-// youth / women / futsal variants share a base competition name; keep the main feed
+// World Cup only for the hackathon feed; skip youth / women / futsal variants
+const INCLUDE = /world cup/i;
 const EXCLUDE = /wom|u-?1\d|u-?2\d|youth|futsal|beach|reserve/i;
 const DAY = 86_400_000;
 
@@ -40,7 +41,9 @@ export async function scanFixtures(): Promise<{ matches: Match[]; complete: bool
         try {
           const res = await apiFetch(`/fixtures/snapshot?startEpochDay=${day}`);
           for (const f of (await res.json()) as RawFixture[]) {
-            if (!EXCLUDE.test(f.Competition)) byId.set(f.FixtureId, f);
+            if (INCLUDE.test(f.Competition) && !EXCLUDE.test(f.Competition)) {
+              byId.set(f.FixtureId, f);
+            }
           }
         } catch {
           failures++;

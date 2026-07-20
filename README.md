@@ -47,14 +47,25 @@ finished matches.
 
 ## Competitions, scorers & bookings
 
-- The top-bar **competition dropdown** (and the chips in the match browser) are
-  built dynamically from your feed: REF scans a rolling window of fixtures,
-  groups them by competition, and lists every league your token returns (World
-  Cup pinned first, then Premier League, La Liga, Ligue 1, … as available).
-- The FAIRNESS panel shows a **Scorers & Bookings** block per team, parsed from
-  the feed's per-player stats (latest snapshot wins, so an overturned goal drops
-  its scorer). Referee/official data is not exposed by this feed, so it is not
-  shown.
+- The app is scoped to the **World Cup** feed (the hackathon's 104 matches).
+  The competition selector is built dynamically from the feed, so adding other
+  leagues later is a one-line filter change in `src/lib/txline/fixtures.ts`.
+- **Scorers & Bookings** are parsed from the feed's per-player stats (latest
+  snapshot wins, so an overturned goal drops its scorer). Only real player
+  names are shown — if the feed exposes only numeric ids, the block is hidden.
+  Referee/official data is not in the feed, so it is not shown.
+- **On-chain verification** is front-and-centre: each decision is validated
+  against TxLINE's Solana-anchored proofs, and the FAIRNESS panel shows an
+  "N decisions anchored on Solana" chip linking to the explorer — the feed's
+  signed data used as an oracle-free source of truth.
+
+## Replay & motion
+
+Every completed match can be **replayed client-side** (▶ REPLAY MATCH): the
+loaded decisions are revealed over ~42s with a live minute clock, a progress
+bar, rolling score digits, growing discipline bars, a moving timeline
+playhead, and broadcast-style banners for goals/reds/VAR — which fire **only**
+during replay, never on a normal load.
 
 ## Prerequisites
 

@@ -2,25 +2,16 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import Flag from "@/components/Flag";
 import ThemeToggle from "@/components/ThemeToggle";
-
-const HERO_FIXTURE = "18222446";
+import type { MatchSummary } from "@/lib/matchSummary";
 
 const fade = {
   hidden: { opacity: 0, y: 18 },
   show: { opacity: 1, y: 0, transition: { duration: 0.45 } },
 };
 
-type Summary = {
-  teams: { 1: string; 2: string };
-  score: { 1: number; 2: number };
-  phase: string;
-  keyEvents: { minute: number | null; team: 1 | 2 | null; kind: string; detail: string }[];
-};
-
-export default function Landing() {
+export default function Landing({ summary }: { summary: MatchSummary | null }) {
   return (
     <div className="min-h-dvh">
       <header className="stripes flex h-12 items-center gap-3 border-b border-border px-4">
@@ -84,7 +75,7 @@ export default function Landing() {
           </div>
 
           <motion.div variants={fade}>
-            <HeroIllustration />
+            <HeroIllustration data={summary} />
           </motion.div>
         </motion.section>
 
@@ -254,17 +245,8 @@ function eventText(kind: string, detail: string): string {
   return detail;
 }
 
-function HeroIllustration() {
-  const [data, setData] = useState<Summary | null>(null);
-  const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    fetch(`/api/match-summary/${HERO_FIXTURE}`)
-      .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then((d: Summary) => setData(d))
-      .catch(() => setFailed(true));
-  }, []);
-
+function HeroIllustration({ data }: { data: MatchSummary | null }) {
+  const failed = data === null;
   const t1 = data?.teams[1] ?? "Team A";
   const t2 = data?.teams[2] ?? "Team B";
   const c1 = t1.slice(0, 3).toUpperCase();
@@ -327,9 +309,7 @@ function HeroIllustration() {
           );
         })
       ) : (
-        <div className="label p-4">
-          {failed ? "live example unavailable here" : "loading match…"}
-        </div>
+        failed && <div className="label p-4">example unavailable</div>
       )}
     </div>
   );

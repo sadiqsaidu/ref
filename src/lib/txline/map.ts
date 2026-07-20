@@ -103,7 +103,14 @@ export function aggregatePlayers(records: RawScore[]): Players {
       const side = team === 1 ? ps.Participant1 : ps.Participant2;
       if (!side) continue;
       for (const [key, stat] of Object.entries(side)) {
-        const name = /^\d+$/.test(key.trim()) ? `#${key}` : key;
+        // only real names — a numeric id is not shown (user preference)
+        const name =
+          typeof (stat as RawPlayer).name === "string"
+            ? String((stat as RawPlayer).name)
+            : /^\d+$/.test(key.trim())
+              ? null
+              : key;
+        if (!name) continue;
         acc[team].set(name, {
           name,
           goals: num(stat, "goals"),

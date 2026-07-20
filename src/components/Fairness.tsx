@@ -121,125 +121,141 @@ const TICK_COLORS: Partial<Record<RefKind, string>> = {
   yellow: "var(--yellow)",
 };
 
+const PX_PER_MIN = 11;
+
 function Timeline({
   events,
   onHighlight,
+  highlightId,
+  playhead,
 }: {
   events: RefEvent[];
   onHighlight: (id: string | null) => void;
+  highlightId: string | null;
+  playhead?: number;
 }) {
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const [w, setW] = useState(0);
-  useEffect(() => {
-    const el = wrapRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(() => setW(el.clientWidth));
-    ro.observe(el);
-    setW(el.clientWidth);
-    return () => ro.disconnect();
-  }, []);
-
-  const reduced = useReducedMotion() ?? false;
   const plotted = events.filter(
     (e) => e.minute !== null && e.kind !== "phase_change" && e.kind !== "var_end",
   );
   const maxMin = plotted.some((e) => (e.minute ?? 0) > 90) ? 120 : 90;
-  const pad = 4;
-  const x = (m: number) => pad + (Math.min(m, maxMin) / maxMin) * (w - pad * 2);
-  const lastGoal = [...plotted].reverse().find((e) => e.kind === "goal");
+  const pad = 8;
+  const w = pad * 2 + maxMin * PX_PER_MIN;
+  const H = 34;
+  const x = (m: number) => pad + Math.min(m, maxMin) * PX_PER_MIN;
 
   return (
-    <div ref={wrapRef}>
-      {w > 0 && (
-        <svg width={w} height="20" className="block">
-          <line x1={pad} y1="10" x2={w - pad} y2="10" stroke="var(--border)" />
-          {lastGoal && !reduced && (
-            <motion.circle
-              key={lastGoal.id}
-              cx={x(lastGoal.minute!)}
-              cy="10"
-              fill="none"
-              stroke="var(--green)"
-              initial={{ r: 2, opacity: 0.9 }}
-              animate={{ r: 9, opacity: 0 }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-            />
-          )}
-          {[45, 90].map((m) => (
-            <line key={m} x1={x(m)} y1="7" x2={x(m)} y2="13" stroke="var(--muted)" strokeWidth="1" />
-          ))}
-          {plotted.map((e) =>
-            e.kind === "var_start" ? (
-              <g key={e.id}>
+    <div className="overflow-x-auto">
+      <svg width={w} height={H} className="block">
+        <line x1={pad} y1={H / 2} x2={w - pad} y2={H / 2} stroke="var(--border)" />
+        {Array.from({ length: maxMin / 15 + 1 }, (_, i) => i * 15).map((m) => (
+          <g key={m}>
+            <line x1={x(m)} y1={H / 2 - 4} x2={x(m)} y2={H / 2 + 4} stroke="var(--muted)" strokeWidth="0.75" />
+            <text x={x(m)} y={H - 1} textAnchor="middle" className="fill-muted" style={{ fontSize: 8 }}>
+              {m}&apos;
+            </text>
+          </g>
+        ))}
+        {playhead !== undefined && (
+          <motion.line
+            x1={x(playhead)}
+            y1="2"
+            x2={x(playhead)}
+            y2={H - 8}
+            stroke="var(--green)"
+            strokeWidth="1.5"
+            animate={{ x: 0 }}
+          />
+        )}
+        {plotted.map((e) => {
+          const hit = e.id === highlightId;
+          const cx = x(e.minute!);
+          const color =
+            e.kind === "var_start" ? "var(--amber)" : TICK_COLORS[e.kind] ?? "var(--muted)";
+          return (
+            <g
+              key={e.id}
+              className="cursor-pointer"
+              onMouseEnter={() => onHighlight(e.id)}
+              onMouseLeave={() => onHighlight(null)}
+              onClick={() => onHighlight(e.id)}
+            >
+              {e.kind === "var_start" ? (
                 <path
-                  d={`M ${x(e.minute!)} 4 L ${x(e.minute!) + 4} 10 L ${x(e.minute!)} 16 L ${x(e.minute!) - 4} 10 Z`}
-                  fill="none"
-                  stroke="var(--amber)"
-                  strokeWidth="1"
+                  d={`M ${cx} 5 L ${cx + 4} ${H / 2} L ${cx} ${H - 10} L ${cx - 4} ${H / 2} Z`}
+                  fill={hit ? color : "none"}
+                  stroke={color}
+                  strokeWidth={hit ? 1.5 : 1}
                 />
-                <rect
-                  x={x(e.minute!) - 5}
-                  y="0"
-                  width="10"
-                  height="20"
-                  fill="transparent"
-                  className="cursor-pointer"
-                  onMouseEnter={() => onHighlight(e.id)}
-                  onMouseLeave={() => onHighlight(null)}
-                  onClick={() => onHighlight(e.id)}
-                />
-              </g>
-            ) : (
-              <g key={e.id}>
+              ) : (
                 <line
-                  x1={x(e.minute!)}
-                  y1="4"
-                  x2={x(e.minute!)}
-                  y2="16"
-                  stroke={TICK_COLORS[e.kind] ?? "var(--muted)"}
-                  strokeWidth="1.5"
+                  x1={cx}
+                  y1={hit ? 3 : 6}
+                  x2={cx}
+                  y2={hit ? H - 8 : H - 12}
+                  stroke={color}
+                  strokeWidth={hit ? 3 : 1.75}
                 />
-                <rect
-                  x={x(e.minute!) - 3}
-                  y="0"
-                  width="6"
-                  height="20"
-                  fill="transparent"
-                  className="cursor-pointer"
-                  onMouseEnter={() => onHighlight(e.id)}
-                  onMouseLeave={() => onHighlight(null)}
-                  onClick={() => onHighlight(e.id)}
-                />
-              </g>
-            ),
-          )}
-        </svg>
-      )}
-      <div className="label mt-0.5 flex justify-between">
-        <span>0'</span>
-        <span>45'</span>
-        <span>{maxMin}'</span>
-      </div>
+              )}
+              <rect x={cx - 5} y="0" width="10" height={H} fill="transparent" />
+            </g>
+          );
+        })}
+      </svg>
     </div>
   );
 }
 
 const TIER_COLORS = {
-  "within normal range": "var(--border)",
+  "within normal range": "var(--green)",
   unusual: "var(--amber)",
   rare: "var(--red)",
 };
 
-function Chip({ label, value, sample }: { label: string; value: number; sample: number[] }) {
+// plain-language comparison against tournament baselines, with a visual meter
+function BaselineRow({
+  label,
+  value,
+  sample,
+  reduced,
+}: {
+  label: string;
+  value: number;
+  sample: number[];
+  reduced: boolean;
+}) {
   const p = percentile(sample, value);
   const tier = tierFor(p);
+  const color = TIER_COLORS[tier];
+  const rounded = Math.round(p);
   return (
-    <span
-      className="label border px-1.5 py-1"
-      style={{ borderColor: TIER_COLORS[tier] }}
-    >
-      {label} · {ordinal(p)} pct · {tier}
-    </span>
+    <div>
+      <div className="mb-1 flex items-baseline justify-between gap-2">
+        <span className="text-xs">
+          <span className="font-bold tabular-nums">{value}</span>{" "}
+          <span className="text-muted">{label}</span>
+        </span>
+        <span className="label" style={{ color }}>
+          {tier}
+        </span>
+      </div>
+      <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-border">
+        <div className="absolute inset-0 flex">
+          <div className="h-full" style={{ width: "80%", background: "color-mix(in srgb, var(--green) 30%, transparent)" }} />
+          <div className="h-full" style={{ width: "15%", background: "color-mix(in srgb, var(--amber) 35%, transparent)" }} />
+          <div className="h-full" style={{ width: "5%", background: "color-mix(in srgb, var(--red) 40%, transparent)" }} />
+        </div>
+        <motion.div
+          className="absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-bg"
+          style={{ background: color }}
+          initial={reduced ? false : { left: 0 }}
+          animate={{ left: `${Math.min(98, Math.max(2, p))}%` }}
+          transition={{ type: "spring", duration: 0.5, bounce: 0.2 }}
+        />
+      </div>
+      <p className="label mt-1 !normal-case !tracking-normal">
+        higher than {rounded}% of World Cup matches
+      </p>
+    </div>
   );
 }
 
@@ -258,9 +274,12 @@ export default function Fairness({
   onHighlight,
   teams,
   players,
+  highlightId,
   kickoff,
   matchKey,
   oddsSeries,
+  replayActive,
+  replayFrac,
   replay,
 }: {
   state: MatchState;
@@ -268,9 +287,12 @@ export default function Fairness({
   onHighlight: (id: string | null) => void;
   teams: TeamMeta;
   players: Players;
+  highlightId?: string | null;
   kickoff?: number;
   matchKey?: string;
   oddsSeries: OddsTick[];
+  replayActive?: boolean;
+  replayFrac?: number;
   replay?: { active: boolean; onToggle: () => void };
 }) {
   const reduced = useReducedMotion() ?? false;
@@ -288,6 +310,8 @@ export default function Fairness({
   const max = Math.max(1, ...mirror.flatMap(([, x, y]) => [x, y]));
 
   const lastVar = [...events].reverse().find((e) => e.kind === "var_end");
+  const anchored = events.filter((e) => e.verify.status === "anchored");
+  const anchoredRef = anchored.find((e) => e.verify.ref)?.verify.ref;
   const cardsA = a.yellows + a.reds;
   const cardsB = b.yellows + b.reds;
   const discP = percentile(baselines.disciplineSplit, Math.abs(cardsA - cardsB));
@@ -318,6 +342,26 @@ export default function Fairness({
           </motion.button>
         )}
       </div>
+      {replayActive && (
+        <div className="shrink-0 border-b border-green bg-[color-mix(in_srgb,var(--green)_8%,transparent)]">
+          <div className="flex items-center gap-2 px-3 py-1.5">
+            <span className="live-dot size-2 rounded-full bg-green" />
+            <span className="font-display text-xs font-bold tracking-wide text-green">
+              REPLAYING
+            </span>
+            <span className="ml-auto font-display text-base font-bold tabular-nums">
+              {state.minute ?? 0}&apos;
+            </span>
+          </div>
+          <div className="h-1 w-full bg-border">
+            <motion.div
+              className="h-full bg-green"
+              animate={{ width: `${Math.round((replayFrac ?? 0) * 100)}%` }}
+              transition={{ ease: "linear", duration: 0.12 }}
+            />
+          </div>
+        </div>
+      )}
       <motion.div
         key={matchKey}
         initial={reduced ? false : "hidden"}
@@ -374,6 +418,20 @@ export default function Fairness({
                 </span>
               ))}
             </div>
+          )}
+          {anchored.length > 0 && (
+            <a
+              href={anchoredRef}
+              target="_blank"
+              rel="noreferrer"
+              className="row-hover mt-2 flex items-center justify-center gap-1.5 rounded-[4px] border border-green py-1"
+            >
+              <span className="text-green">✓</span>
+              <span className="label !text-green">
+                {anchored.length} decisions anchored on Solana
+              </span>
+              <span className="label">↗</span>
+            </a>
           )}
         </motion.div>
 
@@ -456,34 +514,56 @@ export default function Fairness({
         </motion.div>
 
         <motion.div variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } }}>
-          <Section accent="var(--green)" title="Context · Tournament Baselines" />
-          <div className="flex flex-wrap gap-1.5">
-            <Chip
-              label="Yellows split"
-              value={Math.abs(a.yellows - b.yellows)}
-              sample={baselines.yellowsSplit}
+          <Section accent="var(--green)" title="How This Match Compares" />
+          <p className="label mb-3 !normal-case !tracking-normal">
+            Each bar places this match against every other World Cup match. Green is
+            typical, amber unusual, red rare — a marker far right means one team got
+            far more than the other.
+          </p>
+          <div className="flex flex-col gap-3">
+            <BaselineRow
+              label="card difference between teams"
+              value={Math.abs(a.yellows + a.reds - (b.yellows + b.reds))}
+              sample={baselines.disciplineSplit}
+              reduced={reduced}
             />
-            <Chip
-              label="Fouls split"
+            <BaselineRow
+              label="foul difference between teams"
               value={Math.abs(a.foulsProxy - b.foulsProxy)}
               sample={baselines.foulsSplit}
+              reduced={reduced}
             />
-            <Chip
-              label="VAR against split"
+            <BaselineRow
+              label="VAR reviews against one team vs the other"
               value={Math.abs(a.varAgainst - b.varAgainst)}
               sample={baselines.varAgainstSplit}
+              reduced={reduced}
             />
           </div>
+          <p className="mt-3 border-t border-border pt-2 text-xs leading-relaxed text-muted">
+            Bottom line: the two teams were shown{" "}
+            <span className="font-bold text-text">
+              {cardsA} and {cardsB} cards
+            </span>
+            . That gap is{" "}
+            <span className="font-bold" style={{ color: TIER_COLORS[discTier] }}>
+              {discTier}
+            </span>{" "}
+            for this tournament ({ordinal(discP)} percentile).
+          </p>
         </motion.div>
 
-        <p className="label">
-          Discipline split {cardsA}–{cardsB} · {ordinal(discP)} pct · {discTier} for this
-          tournament
-        </p>
-
         <motion.div variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } }}>
-          <Section accent="var(--blue)" title="Timeline" />
-          <Timeline events={events} onHighlight={onHighlight} />
+          <div className="mb-2 flex items-center justify-between">
+            <Section accent="var(--blue)" title="Timeline" />
+            <span className="label !normal-case !tracking-normal">tap a mark → ledger</span>
+          </div>
+          <Timeline
+            events={events}
+            onHighlight={onHighlight}
+            highlightId={highlightId ?? null}
+            playhead={replayActive ? (state.minute ?? 0) : undefined}
+          />
         </motion.div>
       </motion.div>
     </section>

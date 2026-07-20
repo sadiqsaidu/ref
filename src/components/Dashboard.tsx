@@ -239,9 +239,23 @@ export default function Dashboard({ network }: { network: string }) {
             onHighlight={setHighlightId}
             teams={teams}
             players={players}
+            highlightId={highlightId}
             kickoff={match?.startTime}
             matchKey={`${cfg.source}:${cfg.fixture ?? ""}`}
             oddsSeries={oddsSeries}
+            replayActive={replayCutoff !== null}
+            replayFrac={
+              replayCutoff !== null && events.length > 1
+                ? Math.max(
+                    0,
+                    Math.min(
+                      1,
+                      (replayCutoff - events[0].ts) /
+                        (events[events.length - 1].ts - events[0].ts || 1),
+                    ),
+                  )
+                : 0
+            }
             replay={
               cfg.source === "history" && match && events.length > 1
                 ? { active: replayCutoff !== null, onToggle: toggleReplay }
@@ -283,6 +297,7 @@ export default function Dashboard({ network }: { network: string }) {
         events={displayEvents}
         teams={teams}
         reduced={reduced}
+        active={replayCutoff !== null}
       />
       <MatchBrowser
         open={browser}

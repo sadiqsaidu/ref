@@ -21,20 +21,21 @@ export default function Moments({
   events,
   teams,
   reduced,
+  active,
 }: {
   events: RefEvent[];
   teams: TeamMeta;
   reduced: boolean;
+  active: boolean;
 }) {
   const seen = useRef(0);
-  const mounted = useRef(Date.now());
   const [moments, setMoments] = useState<Moment[]>([]);
 
   useEffect(() => {
     const fresh = events.slice(seen.current);
     seen.current = events.length;
-    // suppress choreography while catching up on a stream's backlog
-    if (reduced || Date.now() - mounted.current < 1500) return;
+    // banners only fire during replay — never on a normal instant match load
+    if (reduced || !active) return;
     const add: Moment[] = [];
     for (const e of fresh) {
       if (e.kind === "goal") add.push({ key: e.id, type: "goal", team: e.team });
