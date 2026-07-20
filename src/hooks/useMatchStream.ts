@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { eventKey } from "@/lib/eventKey";
 import { reduce } from "@/lib/reduce";
 import type { RefEvent, Verify } from "@/lib/types";
 
@@ -50,8 +51,13 @@ export function useMatchStream(cfg: StreamConfig) {
       const patch = patches.current;
       patches.current = new Map();
       setEvents((prev) => {
-        const seen = new Set(prev.map((e) => e.id));
-        const fresh = added.filter((e) => !seen.has(e.id));
+        const seen = new Set(prev.map(eventKey));
+        const fresh = added.filter((e) => {
+          const key = eventKey(e);
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
         let next = fresh.length ? [...prev, ...fresh] : prev;
         if (patch.size) {
           next = next.map((e) => {

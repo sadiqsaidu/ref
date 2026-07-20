@@ -55,6 +55,22 @@ const ata = (owner: PublicKey) =>
     [owner.toBuffer(), TOKEN_2022.toBuffer(), TXL_MINT.toBuffer()],
     ATA_PROGRAM,
   )[0];
+const createAtaIx = (payer: PublicKey, owner: PublicKey, mint: PublicKey, tokenProgram: PublicKey) =>
+  new TransactionInstruction({
+    programId: ATA_PROGRAM,
+    keys: [
+      { pubkey: payer, isSigner: true, isWritable: true },
+      { pubkey: ata(owner), isSigner: false, isWritable: true },
+      { pubkey: owner, isSigner: false, isWritable: false },
+      { pubkey: mint, isSigner: false, isWritable: false },
+      { pubkey: SYSTEM, isSigner: false, isWritable: false },
+      { pubkey: tokenProgram, isSigner: false, isWritable: false },
+    ],
+    data: Buffer.alloc(0),
+  });
+
+const userAta = ata(wallet.publicKey);
+const treasuryAta = ata(tokenTreasury);
 
 const data = Buffer.concat([
   SUBSCRIBE_DISCRIMINATOR,
@@ -68,8 +84,8 @@ const ix = new TransactionInstruction({
     { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
     { pubkey: pricingMatrix, isSigner: false, isWritable: false },
     { pubkey: TXL_MINT, isSigner: false, isWritable: false },
-    { pubkey: ata(wallet.publicKey), isSigner: false, isWritable: true },
-    { pubkey: ata(tokenTreasury), isSigner: false, isWritable: true },
+    { pubkey: userAta, isSigner: false, isWritable: true },
+    { pubkey: treasuryAta, isSigner: false, isWritable: true },
     { pubkey: tokenTreasury, isSigner: false, isWritable: false },
     { pubkey: TOKEN_2022, isSigner: false, isWritable: false },
     { pubkey: SYSTEM, isSigner: false, isWritable: false },
@@ -79,7 +95,15 @@ const ix = new TransactionInstruction({
 });
 
 console.log(`subscribing: service level ${SERVICE_LEVEL_ID}, ${DURATION_WEEKS} weeks…`);
-const txSig = await connection.sendTransaction(new Transaction().add(ix), [wallet]);
+const tx = new Transaction();
+if (!(await connection.getAccountInfo(userAta))) {
+  tx.add(createAtaIx(wallet.publicKey, wallet.publicKey, TXL_MINT, TOKEN_2022));
+}
+if (!(await connection.getAccountInfo(treasuryAta))) {
+  tx.add(createAtaIx(wallet.publicKey, tokenTreasury, TXL_MINT, TOKEN_2022));
+}
+tx.add(ix);
+const txSig = await connection.sendTransaction(tx, [wallet]);
 const conf = await connection.confirmTransaction(txSig, "confirmed");
 if (conf.value.err) fail(`subscribe transaction failed: ${JSON.stringify(conf.value.err)}`);
 console.log(`subscribed: ${txSig}`);

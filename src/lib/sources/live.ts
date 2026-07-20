@@ -1,4 +1,5 @@
 import type { MatchSource, RawScore, RefEvent } from "../types";
+import { eventKey } from "../eventKey";
 import { apiFetch, parseSse } from "../txline/api";
 import { createMapper } from "../txline/map";
 
@@ -29,8 +30,9 @@ export function liveSource(fixtureId: string): MatchSource {
               if (!msg.data || msg.event?.toLowerCase() === "heartbeat") continue;
               const raw = JSON.parse(msg.data) as RawScore;
               for (const e of map(raw)) {
-                if (seen.has(e.id)) continue;
-                seen.add(e.id);
+                const key = eventKey(e);
+                if (seen.has(key)) continue;
+                seen.add(key);
                 cb(e);
               }
             }
