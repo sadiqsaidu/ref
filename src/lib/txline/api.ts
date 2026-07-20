@@ -25,6 +25,7 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
     fetch(`${origin()}/api${path}`, {
       ...init,
       headers: {
+        Accept: "application/json",
         ...init.headers,
         Authorization: `Bearer ${token}`,
         ...(process.env.TXLINE_API_TOKEN
@@ -36,6 +37,26 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
   if (res.status === 401 || res.status === 403) res = await req(await getJwt(true));
   if (!res.ok) throw new Error(`txline ${res.status} ${path}`);
   return res;
+}
+
+// some endpoints answer with SSE-framed bodies ("data: {...}" lines) even for
+// one-shot requests; accept both that and plain JSON
+export function parseRecords(text: string): unknown[] {
+  const trimmed = text.trim();
+  if (!/^(data|event|id|retry):|^:/m.test(trimmed.slice(0, 200))) {
+    const parsed = JSON.parse(trimmed);
+    return Array.isArray(parsed) ? parsed : [parsed];
+  }
+  const out: unknown[] = [];
+  for (const line of trimmed.split(/\r?\n/)) {
+    if (!line.startsWith("data:")) continue;
+    const payload = line.slice(5).trim();
+    if (!payload) continue;
+    try {
+      out.push(JSON.parse(payload));
+    } catch {}
+  }
+  return out;
 }
 
 export type SseMessage = { id?: string; event?: string; data: string };

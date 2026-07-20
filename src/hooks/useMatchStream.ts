@@ -23,6 +23,7 @@ export function useMatchStream(cfg: StreamConfig) {
     attempt: 0,
   });
   const buffer = useRef<RefEvent[]>([]);
+  const patches = useRef(new Map<string, Verify>());
   const flushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { source, speed, name, fixture } = cfg;
@@ -46,10 +47,19 @@ export function useMatchStream(cfg: StreamConfig) {
       flushTimer.current = null;
       const added = buffer.current;
       buffer.current = [];
+      const patch = patches.current;
+      patches.current = new Map();
       setEvents((prev) => {
         const seen = new Set(prev.map((e) => e.id));
         const fresh = added.filter((e) => !seen.has(e.id));
-        return fresh.length ? [...prev, ...fresh] : prev;
+        let next = fresh.length ? [...prev, ...fresh] : prev;
+        if (patch.size) {
+          next = next.map((e) => {
+            const verify = patch.get(e.id);
+            return verify ? { ...e, verify } : e;
+          });
+        }
+        return next;
       });
     };
     es.addEventListener("ref", (m) => {
@@ -69,7 +79,8 @@ export function useMatchStream(cfg: StreamConfig) {
         id: string;
         verify: Verify;
       };
-      setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, verify } : e)));
+      patches.current.set(id, verify);
+      flushTimer.current ??= setTimeout(flush, 50);
     });
 
     return () => {

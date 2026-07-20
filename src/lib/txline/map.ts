@@ -52,6 +52,16 @@ const KIND_LABELS: Partial<Record<RefKind, string>> = {
 
 const toMs = (t: number) => (t < 1e12 ? t * 1000 : t);
 
+// feed records appear in camelCase or PascalCase depending on endpoint
+export function normalizeRaw(raw: Record<string, unknown>): RawScore {
+  if (raw.seq !== undefined || raw.ts !== undefined) return raw as RawScore;
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(raw)) {
+    out[k === "Data" || k === "PlayerStats" ? k : k.charAt(0).toLowerCase() + k.slice(1)] = v;
+  }
+  return out as RawScore;
+}
+
 type Delta = { base: number; delta: number };
 
 export function createMapper() {
@@ -87,7 +97,8 @@ export function createMapper() {
       .map((d) => ({ base: Math.abs(d.base), delta: d.delta }));
   }
 
-  return function map(raw: RawScore): RefEvent[] {
+  return function map(input: RawScore): RefEvent[] {
+    const raw = normalizeRaw(input);
     const out: RefEvent[] = [];
     const ts = toMs(raw.ts);
     const baseId = String(raw.seq ?? raw.id ?? ts);
