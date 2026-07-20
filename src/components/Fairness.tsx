@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { TeamMeta } from "@/components/Dashboard";
 import Flag from "@/components/Flag";
 import { loadBaselines } from "@/lib/baselines";
@@ -45,6 +45,7 @@ const MirrorRow = memo(function MirrorRow({
 }) {
   const av = useCountUp(a, reduced);
   const bv = useCountUp(b, reduced);
+  const gid = useId();
   const wA = (a / max) * 48;
   const wB = (b / max) * 48;
   const spring = reduced
@@ -56,10 +57,20 @@ const MirrorRow = memo(function MirrorRow({
       <div className="flex items-center gap-2">
         <span className="w-6 shrink-0 text-right text-sm tabular-nums text-amber">{av}</span>
         <svg viewBox="0 0 100 10" preserveAspectRatio="none" className="h-2 w-full">
+          <defs>
+            <linearGradient id={`${gid}a`} x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stopColor="var(--yellow)" />
+              <stop offset="1" stopColor="var(--amber)" />
+            </linearGradient>
+            <linearGradient id={`${gid}b`} x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stopColor="var(--blue)" />
+              <stop offset="1" stopColor="#7cc4ff" />
+            </linearGradient>
+          </defs>
           <motion.rect
             y="1"
             height="8"
-            fill="var(--amber)"
+            fill={`url(#${gid}a)`}
             animate={{ x: 50 - wA, width: wA }}
             transition={spring}
           />
@@ -67,7 +78,7 @@ const MirrorRow = memo(function MirrorRow({
             x="50"
             y="1"
             height="8"
-            fill="var(--blue)"
+            fill={`url(#${gid}b)`}
             animate={{ width: wB }}
             transition={spring}
           />
@@ -230,17 +241,28 @@ function Chip({ label, value, sample }: { label: string; value: number; sample: 
   );
 }
 
+function Section({ accent, title }: { accent: string; title: string }) {
+  return (
+    <div className="label mb-2 flex items-center gap-1.5">
+      <span className="size-1.5" style={{ background: accent }} />
+      {title}
+    </div>
+  );
+}
+
 export default function Fairness({
   state,
   events,
   onHighlight,
   teams,
+  kickoff,
   replay,
 }: {
   state: MatchState;
   events: RefEvent[];
   onHighlight: (id: string | null) => void;
   teams: TeamMeta;
+  kickoff?: number;
   replay?: { active: boolean; onToggle: () => void };
 }) {
   const reduced = useReducedMotion() ?? false;
@@ -286,26 +308,56 @@ export default function Fairness({
           <div className="flex items-end justify-between gap-2">
             <span className="flex max-w-[30%] items-center gap-1.5">
               <Flag name={teams[1].name} />
-              <span className="label truncate !text-amber">{teams[1].name}</span>
+              <span className="truncate font-display text-sm font-medium uppercase tracking-wider text-amber">
+                {teams[1].name}
+              </span>
             </span>
-            <span className="bignum glow text-5xl">
+            <span className="bignum glow font-display text-5xl font-bold">
               <Digit value={state.score[1]} color="var(--amber)" />
               <span className="text-muted"> — </span>
               <Digit value={state.score[2]} color="var(--blue)" />
             </span>
             <span className="flex max-w-[30%] items-center justify-end gap-1.5">
-              <span className="label truncate !text-blue">{teams[2].name}</span>
+              <span className="truncate font-display text-sm font-medium uppercase tracking-wider text-blue">
+                {teams[2].name}
+              </span>
               <Flag name={teams[2].name} />
             </span>
           </div>
           <div className="label mt-2 text-center">
+            {kickoff
+              ? `${new Date(kickoff).toLocaleDateString([], { month: "short", day: "numeric" })} · `
+              : ""}
             {state.phase}
             {state.minute !== null ? ` · ${state.minute}'` : ""}
           </div>
+          {events.length > 0 && (
+            <div className="mt-3 flex flex-wrap justify-center gap-1.5">
+              {(
+                [
+                  [`${events.filter((e) => e.kind === "goal").length} goals`, "var(--green)"],
+                  [
+                    `${events.filter((e) => ["yellow", "red", "second_yellow"].includes(e.kind)).length} cards`,
+                    "var(--yellow)",
+                  ],
+                  [`${events.filter((e) => e.kind === "var_start").length} var`, "var(--amber)"],
+                  [`${events.length} decisions`, "var(--blue)"],
+                ] as const
+              ).map(([text, color]) => (
+                <span
+                  key={text}
+                  className="label rounded-[4px] border px-1.5 py-0.5"
+                  style={{ borderColor: color, color }}
+                >
+                  {text}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         <div>
-          <div className="label mb-2">Discipline Mirror</div>
+          <Section accent="var(--amber)" title="Discipline Mirror" />
           <div className="flex flex-col gap-2.5">
             {mirror.map(([label, av, bv]) => (
               <MirrorRow key={label} label={label} a={av} b={bv} max={max} reduced={reduced} />
@@ -314,7 +366,7 @@ export default function Fairness({
         </div>
 
         <div>
-          <div className="label mb-2">VAR</div>
+          <Section accent="var(--red)" title="VAR" />
           <div className="grid grid-cols-[1fr_2.5rem_2.5rem] gap-y-1 border border-border p-2 text-xs tabular-nums">
             <span />
             <span className="label text-center !text-amber">{teams[1].code}</span>
@@ -335,7 +387,7 @@ export default function Fairness({
         </div>
 
         <div>
-          <div className="label mb-2">Context · Tournament Baselines</div>
+          <Section accent="var(--green)" title="Context · Tournament Baselines" />
           <div className="flex flex-wrap gap-1.5">
             <Chip
               label="Yellows split"
@@ -361,7 +413,7 @@ export default function Fairness({
         </p>
 
         <div>
-          <div className="label mb-2">Timeline</div>
+          <Section accent="var(--blue)" title="Timeline" />
           <Timeline events={events} onHighlight={onHighlight} />
         </div>
       </div>

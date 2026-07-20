@@ -23,7 +23,7 @@ export default function TopBar({
     <header className="flex h-12 shrink-0 items-center gap-3 border-b border-border px-3 sm:gap-4 sm:px-4">
       <button
         onClick={onWordmarkTap}
-        className="cursor-default select-none text-sm font-bold tracking-[0.2em]"
+        className="wordmark cursor-default select-none font-display text-base font-bold tracking-[0.18em]"
       >
         REF
       </button>
@@ -50,7 +50,7 @@ export default function TopBar({
       <motion.button
         whileTap={reduced ? undefined : { scale: 0.94 }}
         onClick={onMatches}
-        className="label hidden min-h-11 cursor-pointer border border-border px-2 hover:border-green hover:!text-green lg:block"
+        className="label hidden min-h-11 cursor-pointer rounded-[4px] border border-border px-2.5 hover:border-green hover:!text-green lg:block"
       >
         Matches
       </motion.button>

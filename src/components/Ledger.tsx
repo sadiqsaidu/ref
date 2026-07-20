@@ -45,7 +45,7 @@ function textFor(e: RefEvent): string {
     case "amend":
       return e.detail === "CORRECTION" ? "CORRECTION" : e.detail.replace(" REMOVED", " DISALLOWED");
     case "free_kick":
-      return `FREE KICK · ${e.detail}`;
+      return e.detail === "FREE KICK" ? e.detail : `FREE KICK · ${e.detail}`;
     case "phase_change":
       return e.detail;
     default:
@@ -237,6 +237,7 @@ export default function Ledger({
   return (
     <section className="flex min-h-0 flex-1 flex-col bg-panel">
       <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">
+        <span className="size-1.5 bg-green" />
         <span className="label">Decision Ledger</span>
         <span className="label tabular-nums">{entries.length}</span>
         <span className="ml-auto flex gap-1">

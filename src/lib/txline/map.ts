@@ -40,6 +40,8 @@ const BASE_KINDS: Record<number, RefKind> = {
   5: "red", 6: "red", 7: "corner", 8: "corner",
 };
 
+const STAT_KINDS: RefKind[] = ["goal", "yellow", "red", "second_yellow", "corner"];
+
 const KIND_LABELS: Partial<Record<RefKind, string>> = {
   goal: "GOAL",
   yellow: "YELLOW CARD",
@@ -51,6 +53,7 @@ const KIND_LABELS: Partial<Record<RefKind, string>> = {
 };
 
 const toMs = (t: number) => (t < 1e12 ? t * 1000 : t);
+const spaced = (s: string) => s.replace(/([a-z])([A-Z])/g, "$1 $2").toUpperCase();
 
 // feed records appear in camelCase or PascalCase depending on endpoint
 export function normalizeRaw(raw: Record<string, unknown>): RawScore {
@@ -67,8 +70,14 @@ type Delta = { base: number; delta: number };
 export function createMapper() {
   let phase = "NS";
   let phaseStart = 0;
-  const stats: Record<string, number> = {};
+  // the same increment is reported under the total key, under period keys, and
+  // in re-sent records; one cumulative counter per base dedupes all of them
+  const totals: Record<number, number> = {};
+  const periodVals: Record<number, Record<number, number>> = {};
+  const counts: Record<number, number> = {};
+  const seenActions = new Set<string>();
   let pendingVar: { type: string; team: 1 | 2 | null } | null = null;
+  let lastFk: { team: 1 | 2 | null; minute: number | null } | null = null;
 
   function minuteAt(raw: RawScore): number | null {
     if (typeof raw.minute === "number") return raw.minute;
@@ -78,27 +87,34 @@ export function createMapper() {
     return PHASE_FROZEN[phase] ?? null;
   }
 
-  function diff(raw: RawScore): Delta[] {
-    const out: Delta[] = [];
-    if (!raw.stats) return out;
-    let hasTotal = false;
+  function applyStats(raw: RawScore): Delta[] {
+    if (!raw.stats) return [];
     for (const [key, val] of Object.entries(raw.stats)) {
       const k = Number(key);
-      const prev = stats[key] ?? 0;
-      stats[key] = val;
+      if (!Number.isFinite(k) || typeof val !== "number") continue;
       const base = k < 1000 ? k : k % 1000;
-      if (val === prev || !(base in BASE_KINDS) || (k >= 6000 && k < 7000)) continue;
-      if (k < 1000) hasTotal = true;
-      out.push({ base: k < 1000 ? -k : base, delta: val - prev });
+      const prefix = k - base;
+      if (!(base in BASE_KINDS) || prefix === 6000) continue;
+      if (prefix === 0) totals[base] = val;
+      else (periodVals[base] ??= {})[prefix] = val;
     }
-    // totals and period keys report the same increment; prefer totals when present
-    return out
-      .filter((d) => (hasTotal ? d.base < 0 : true))
-      .map((d) => ({ base: Math.abs(d.base), delta: d.delta }));
+    const out: Delta[] = [];
+    for (const b of Object.keys(BASE_KINDS)) {
+      const base = Number(b);
+      const periodSum = Object.values(periodVals[base] ?? {}).reduce((a, v) => a + v, 0);
+      const next = Math.max(totals[base] ?? 0, periodSum);
+      const prev = counts[base] ?? 0;
+      if (next !== prev) {
+        counts[base] = next;
+        out.push({ base, delta: next - prev });
+      }
+    }
+    return out;
   }
 
   return function map(input: RawScore): RefEvent[] {
     const raw = normalizeRaw(input);
+    if (raw.coverageSecondaryData === true) return [];
     const out: RefEvent[] = [];
     const ts = toMs(raw.ts);
     const baseId = String(raw.seq ?? raw.id ?? ts);
@@ -119,7 +135,7 @@ export function createMapper() {
 
     if (raw.action === "game_finalised") {
       phase = "F";
-      diff(raw);
+      applyStats(raw);
       push("phase_change", "FINALISED", null);
       return out;
     }
@@ -130,45 +146,82 @@ export function createMapper() {
       push("phase_change", phase, null);
     }
 
-    const deltas = diff(raw);
+    const deltas = applyStats(raw);
     const kind = raw.action ? ACTION_KINDS[raw.action.toLowerCase()] : undefined;
+    const minute = minuteAt(raw);
 
-    if (kind === "free_kick") {
-      const fk = raw.Data?.FreeKickType;
-      if (fk === "Offside") push("offside", "OFFSIDE");
-      else push("free_kick", fk ? fk.replace(/([a-z])([A-Z])/g, "$1 $2").toUpperCase() : "FREE KICK");
-    } else if (kind === "offside") {
-      push("offside", "OFFSIDE");
-    } else if (kind === "var_start") {
-      const type = String(raw.Data?.Type ?? "Review");
-      pendingVar = { type, team };
-      push("var_start", `VAR · ${type.replace(/([a-z])([A-Z])/g, "$1 $2").toUpperCase()}`);
-    } else if (kind === "var_end") {
-      const outcome = String(raw.Data?.Outcome ?? "").toUpperCase();
-      const type = (pendingVar?.type ?? "Review").replace(/([a-z])([A-Z])/g, "$1 $2").toUpperCase();
-      push("var_end", `${type} · ${outcome}`, team ?? pendingVar?.team ?? null);
-      pendingVar = null;
-    } else if (kind === "penalty_outcome") {
-      const outcome = String(raw.Data?.Outcome ?? "").toUpperCase();
-      push("penalty_outcome", outcome || "PENALTY");
-      if (outcome === "SCORED" && deltas.some((d) => d.delta > 0 && d.base <= 2)) {
-        push("goal", "PENALTY");
-      }
-    } else if (kind) {
-      const t = team ?? teamFromDeltas(deltas, kind);
-      push(kind, KIND_LABELS[kind] ?? kind.toUpperCase(), t);
-    } else {
+    const emitDeltas = (skip?: (d: Delta) => boolean) => {
       for (const d of deltas) {
-        const dTeam = (d.base % 2 === 1 ? 1 : 2) as 1 | 2;
-        if (d.delta > 0) push(BASE_KINDS[d.base], KIND_LABELS[BASE_KINDS[d.base]] ?? "", dTeam);
-        else push("amend", `${KIND_LABELS[BASE_KINDS[d.base]]} REMOVED`, dTeam);
+        if (d.delta === 0 || skip?.(d)) continue;
+        const t = (d.base % 2 === 1 ? 1 : 2) as 1 | 2;
+        const k = BASE_KINDS[d.base];
+        if (d.delta > 0) {
+          for (let i = 0; i < d.delta; i++) push(k, KIND_LABELS[k] ?? "", t);
+        } else {
+          push("amend", `${KIND_LABELS[k]} REMOVED`, t);
+        }
       }
+    };
+
+    if (kind && STAT_KINDS.includes(kind)) {
+      const bookedTeam = team ?? teamFromDeltas(deltas, kind);
+      if (kind === "second_yellow" && deltas.some((d) => d.delta > 0)) {
+        push("second_yellow", KIND_LABELS.second_yellow ?? "", bookedTeam);
+        emitDeltas(
+          (d) =>
+            d.delta > 0 &&
+            (BASE_KINDS[d.base] === "yellow" || BASE_KINDS[d.base] === "red") &&
+            (d.base % 2 === 1 ? 1 : 2) === bookedTeam,
+        );
+      } else {
+        emitDeltas();
+      }
+    } else if (kind === "free_kick" || kind === "offside") {
+      const fk = raw.Data?.FreeKickType;
+      const isOffside = kind === "offside" || fk === "Offside";
+      // typeless records re-report the kick already announced with a type
+      const dup =
+        !fk && lastFk !== null && lastFk.team === team && lastFk.minute === minute;
+      lastFk = { team, minute };
+      if (isOffside) push("offside", "OFFSIDE");
+      else if (!dup) push("free_kick", fk ? spaced(fk) : "FREE KICK");
+      emitDeltas();
+    } else if (kind) {
+      const actionKey = raw.id !== undefined ? `${raw.id}:${kind}` : null;
+      const dup = actionKey !== null && seenActions.has(actionKey);
+      if (actionKey) seenActions.add(actionKey);
+      if (!dup) {
+        if (kind === "var_start") {
+          const type = String(raw.Data?.Type ?? "Review");
+          pendingVar = { type, team };
+          push("var_start", `VAR · ${spaced(type)}`);
+        } else if (kind === "var_end") {
+          const outcome = String(raw.Data?.Outcome ?? "").toUpperCase();
+          const type = spaced(pendingVar?.type ?? "Review");
+          push("var_end", `${type} · ${outcome}`, team ?? pendingVar?.team ?? null);
+          pendingVar = null;
+        } else if (kind === "penalty_outcome") {
+          const outcome = String(raw.Data?.Outcome ?? "").toUpperCase();
+          push("penalty_outcome", outcome || "PENALTY");
+          const gd = deltas.find((d) => (d.base === 1 || d.base === 2) && d.delta > 0);
+          if (outcome === "SCORED" && gd) {
+            push("goal", "PENALTY", (d => (d.base === 1 ? 1 : 2) as 1 | 2)(gd));
+            gd.delta--;
+          }
+        } else if (kind !== "amend" || deltas.every((d) => d.delta === 0)) {
+          push(kind, KIND_LABELS[kind] ?? kind.toUpperCase(), team);
+        }
+      }
+      emitDeltas();
+    } else {
+      emitDeltas();
     }
     return out;
   };
 }
 
 function teamFromDeltas(deltas: Delta[], kind: RefKind): 1 | 2 | null {
-  const d = deltas.find((x) => BASE_KINDS[x.base] === kind && x.delta > 0);
+  const wanted: RefKind = kind === "second_yellow" ? "yellow" : kind;
+  const d = deltas.find((x) => BASE_KINDS[x.base] === wanted && x.delta > 0);
   return d ? ((d.base % 2 === 1 ? 1 : 2) as 1 | 2) : null;
 }

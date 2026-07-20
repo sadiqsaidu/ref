@@ -38,6 +38,7 @@
   --color-green: var(--green);
   --color-blue: var(--blue);
   --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+  --font-display: var(--font-grotesk), var(--font-jetbrains), sans-serif;
 }
 
 html,
@@ -103,6 +104,21 @@ a {
 
 :root:not([data-theme="light"]) .glow {
   text-shadow: 0 0 18px color-mix(in srgb, currentcolor 35%, transparent);
+}
+
+:root:not([data-theme="light"]) body {
+  background:
+    radial-gradient(1100px 700px at 78% -18%, #111726 0%, transparent 60%),
+    radial-gradient(900px 600px at -10% 110%, #14110d 0%, transparent 55%),
+    var(--bg);
+  background-attachment: fixed;
+}
+
+.wordmark {
+  background: linear-gradient(90deg, var(--amber), var(--green) 85%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 :root:not([data-theme="light"]) body::after {

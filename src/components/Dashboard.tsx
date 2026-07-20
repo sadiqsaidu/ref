@@ -1,6 +1,6 @@
 "use client";
 
-import { useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import TopBar from "@/components/TopBar";
 import Ledger from "@/components/Ledger";
@@ -198,6 +198,7 @@ export default function Dashboard({ network }: { network: string }) {
             events={events}
             onHighlight={setHighlightId}
             teams={teams}
+            kickoff={match?.startTime}
             replay={
               cfg.source === "history" && match
                 ? { active: replaying, onToggle: onToggleReplay }
@@ -222,11 +223,17 @@ export default function Dashboard({ network }: { network: string }) {
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`label min-h-11 cursor-pointer ${
+            className={`label relative min-h-11 cursor-pointer ${
               tab === t ? "bg-panel text-text" : ""
             }`}
           >
             {t}
+            {tab === t && (
+              <motion.span
+                layoutId="tab-underline"
+                className="absolute inset-x-3 bottom-1 h-0.5 bg-green"
+              />
+            )}
           </button>
         ))}
       </nav>

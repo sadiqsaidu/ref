@@ -65,13 +65,29 @@ export default function MatchBrowser({
             className="fixed inset-y-0 left-0 z-50 flex w-full flex-col border-r border-border bg-panel sm:w-96"
           >
             <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-2">
-              <span className="label">World Cup 2026 · Matches</span>
+              <span className="font-display text-sm font-bold uppercase tracking-wider">
+                Matches
+              </span>
               <button
                 onClick={onClose}
                 className="label min-h-11 cursor-pointer px-2 hover:text-text"
               >
                 ESC
               </button>
+            </div>
+            <div className="flex shrink-0 gap-1.5 overflow-x-auto border-b border-border px-3 py-2">
+              <span className="label shrink-0 rounded-[4px] border border-green bg-[color-mix(in_srgb,var(--green)_10%,transparent)] px-2 py-1 !text-green">
+                World Cup 2026
+              </span>
+              {["Premier League", "La Liga", "Serie A"].map((c) => (
+                <span
+                  key={c}
+                  title="Not available on the free tier yet"
+                  className="label shrink-0 cursor-not-allowed rounded-[4px] border border-border px-2 py-1 opacity-40"
+                >
+                  {c} · soon
+                </span>
+              ))}
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto">
               {matches === null && !failed && (

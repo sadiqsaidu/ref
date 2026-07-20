@@ -38,6 +38,17 @@ export function reduce(events: RefEvent[]): MatchState {
     teams: { 1: emptyTeam(), 2: emptyTeam() },
     lastTs: null,
   };
+  // a disallowed goal arrives as var_end OVERTURNED and/or a stat rollback
+  // (amend GOAL REMOVED); apply the deduction once whichever comes first
+  const deducted = { 1: false, 2: false };
+  const takeGoal = (team: 1 | 2) => {
+    if (deducted[team]) {
+      deducted[team] = false;
+      return;
+    }
+    deducted[team] = true;
+    s.score[team] = Math.max(0, s.score[team] - 1);
+  };
   for (const e of events) {
     s.lastTs = e.ts;
     s.phase = e.phase;
@@ -76,8 +87,11 @@ export function reduce(events: RefEvent[]): MatchState {
       case "var_end":
         if (e.detail.includes("OVERTURNED")) {
           team.varOverturned++;
-          if (e.detail.startsWith("GOAL")) s.score[e.team] = Math.max(0, s.score[e.team] - 1);
+          if (e.detail.startsWith("GOAL")) takeGoal(e.team);
         }
+        break;
+      case "amend":
+        if (e.detail === "GOAL REMOVED") takeGoal(e.team);
         break;
     }
   }
