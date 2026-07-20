@@ -15,6 +15,7 @@ export type StreamConfig = {
 export type Connection = {
   status: "connecting" | "open" | "reconnecting" | "error";
   attempt: number;
+  message?: string;
 };
 
 export function useMatchStream(cfg: StreamConfig) {
@@ -79,6 +80,11 @@ export function useMatchStream(cfg: StreamConfig) {
           ? { status: "open", attempt: 0 }
           : { status: "reconnecting", attempt: c.attempt + 1 },
       );
+    });
+    es.addEventListener("source-error", (m) => {
+      const { message } = JSON.parse((m as MessageEvent).data) as { message: string };
+      es.close();
+      setConnection({ status: "error", attempt: 0, message });
     });
     es.addEventListener("verify", (m) => {
       const { id, verify } = JSON.parse((m as MessageEvent).data) as {

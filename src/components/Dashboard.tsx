@@ -187,9 +187,11 @@ export default function Dashboard({ network }: { network: string }) {
           ? "stream unreachable · check TXLINE_API_TOKEN · retrying"
           : "connected · awaiting first decision"
       : cfg.source === "history"
-        ? connection.status === "reconnecting"
-          ? "match record unavailable · check TXLINE_API_TOKEN · retrying"
-          : "loading match record…"
+        ? connection.status === "error"
+          ? connection.message ?? "match record unavailable · check TXLINE_API_TOKEN"
+          : connection.status === "reconnecting"
+            ? "match record unavailable · retrying"
+            : "loading match record…"
         : "awaiting first decision";
 
   return (

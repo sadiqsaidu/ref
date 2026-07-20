@@ -52,7 +52,9 @@ export async function GET(req: Request) {
   let heartbeat: ReturnType<typeof setInterval>;
   const stream = new ReadableStream({
     start(controller) {
+      let ended = false;
       const write = (chunk: string) => {
+        if (ended) return;
         try {
           controller.enqueue(enc.encode(chunk));
         } catch {}
@@ -72,6 +74,15 @@ export async function GET(req: Request) {
           }
         },
         (up) => write(`event: upstream\ndata: ${JSON.stringify({ up })}\n\n`),
+        (message) => {
+          write(`event: source-error\ndata: ${JSON.stringify({ message })}\n\n`);
+          ended = true;
+          clearInterval(heartbeat);
+          source.close();
+          try {
+            controller.close();
+          } catch {}
+        },
       );
       heartbeat = setInterval(() => write(": hb\n\n"), 15000);
     },

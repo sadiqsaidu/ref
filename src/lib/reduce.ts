@@ -58,6 +58,7 @@ export function reduce(events: RefEvent[]): MatchState {
     const other = s.teams[e.team === 1 ? 2 : 1];
     switch (e.kind) {
       case "goal":
+        deducted[e.team] = false;
         s.score[e.team]++;
         break;
       case "yellow":

@@ -15,7 +15,7 @@ export function replaySource(name: string, speed: number): MatchSource {
           const messages = (JSON.parse(txt) as RawScore[])
             .slice()
             .sort((a, b) => a.seq - b.seq);
-          inner = playRaw(messages, speed);
+          inner = playRaw(messages, speed, true);
           inner.subscribe(cb);
         })
         .catch((e) => console.error(`replay ${name}:`, e.message));

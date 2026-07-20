@@ -164,6 +164,10 @@ All run with `npx tsx` (downloaded on demand):
 | `scripts/record-replay.mts`    | `npx tsx scripts/record-replay.mts <fixtureId> <name>`               | saves a past match to `data/replays/<name>.json` for replay mode     |
 | `scripts/activate-mainnet.mts` | see previous section                                                | one-shot mainnet subscription + token activation                     |
 
+`record-replay.mts` reads `.env.local`. A 401/403 means the API token must
+be renewed or reactivated; an empty historical response means TxLINE has no
+score record for that fixture, even if it appears in the fixture snapshot.
+
 ## Pre-kickoff checklist
 
 1. `npx tsx scripts/verify-endpoints.mts` — required: our endpoint paths were

@@ -1,5 +1,5 @@
 import type { MatchSource, RefEvent } from "../types";
-import { apiFetch, parseRecords } from "../txline/api";
+import { apiFetch, parseRecords, TxlineApiError } from "../txline/api";
 import { normalizeRaw } from "../txline/map";
 import { playRaw } from "./play";
 
@@ -7,7 +7,11 @@ export function historySource(fixtureId: string, speed: number): MatchSource {
   let inner: MatchSource | null = null;
   let closed = false;
   return {
-    subscribe(cb: (e: RefEvent) => void, onStatus?: (up: boolean) => void) {
+    subscribe(
+      cb: (e: RefEvent) => void,
+      onStatus?: (up: boolean) => void,
+      onError?: (message: string) => void,
+    ) {
       apiFetch(`/scores/historical/${fixtureId}`)
         .then((r) => r.text())
         .then((text) => {
@@ -18,12 +22,17 @@ export function historySource(fixtureId: string, speed: number): MatchSource {
             .sort((a, b) => a.seq - b.seq);
           if (records.length === 0) throw new Error("no score records in response");
           onStatus?.(true);
-          inner = playRaw(records, speed);
+          inner = playRaw(records, speed, true);
           inner.subscribe(cb);
         })
         .catch((e) => {
           onStatus?.(false);
           console.error(`history ${fixtureId}:`, e instanceof Error ? e.message : e);
+          onError?.(
+            e instanceof TxlineApiError && (e.status === 401 || e.status === 403)
+              ? `match record access denied (${e.status}) · renew or reactivate TXLINE_API_TOKEN, then restart the server`
+              : `match record unavailable${e instanceof Error ? ` · ${e.message}` : ""}`,
+          );
         });
     },
     close() {

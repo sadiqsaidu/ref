@@ -82,7 +82,7 @@ export function normalizeRaw(raw: Record<string, unknown>): RawScore {
 
 type Delta = { base: number; delta: number };
 
-export function createMapper() {
+export function createMapper(includeSecondary = false) {
   let phase = "NS";
   let phaseStart = 0;
   // the same increment is reported under the total key, under period keys, and
@@ -117,8 +117,11 @@ export function createMapper() {
     const out: Delta[] = [];
     for (const b of Object.keys(BASE_KINDS)) {
       const base = Number(b);
-      const periodSum = Object.values(periodVals[base] ?? {}).reduce((a, v) => a + v, 0);
-      const next = Math.max(totals[base] ?? 0, periodSum);
+      const periodSum = [1000, 3000, 5000, 7000].reduce(
+        (sum, prefix) => sum + (periodVals[base]?.[prefix] ?? 0),
+        0,
+      );
+      const next = totals[base] ?? periodSum;
       const prev = counts[base] ?? 0;
       if (next !== prev) {
         counts[base] = next;
@@ -130,7 +133,7 @@ export function createMapper() {
 
   return function map(input: RawScore): RefEvent[] {
     const raw = normalizeRaw(input);
-    if (raw.coverageSecondaryData === true) return [];
+    if (!includeSecondary && raw.coverageSecondaryData === true) return [];
     const out: RefEvent[] = [];
     const ts = toMs(raw.ts);
     const baseId = String(raw.seq ?? raw.id ?? ts);

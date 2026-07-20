@@ -1,5 +1,16 @@
 const origin = () => process.env.TXLINE_API_ORIGIN ?? "https://txline.txodds.com";
 
+export class TxlineApiError extends Error {
+  constructor(
+    public status: number,
+    public path: string,
+    detail: string,
+  ) {
+    super(`txline ${status} ${path}${detail ? `: ${detail}` : ""}`);
+    this.name = "TxlineApiError";
+  }
+}
+
 let jwt: Promise<string> | null = null;
 
 function fetchJwt(): Promise<string> {
@@ -35,7 +46,10 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
     });
   let res = await req(await getJwt());
   if (res.status === 401 || res.status === 403) res = await req(await getJwt(true));
-  if (!res.ok) throw new Error(`txline ${res.status} ${path}`);
+  if (!res.ok) {
+    const detail = (await res.text()).replace(/\s+/g, " ").trim().slice(0, 240);
+    throw new TxlineApiError(res.status, path, detail);
+  }
   return res;
 }
 
@@ -43,6 +57,7 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
 // one-shot requests; accept both that and plain JSON
 export function parseRecords(text: string): unknown[] {
   const trimmed = text.trim();
+  if (!trimmed) return [];
   if (!/^(data|event|id|retry):|^:/m.test(trimmed.slice(0, 200))) {
     const parsed = JSON.parse(trimmed);
     return Array.isArray(parsed) ? parsed : [parsed];
