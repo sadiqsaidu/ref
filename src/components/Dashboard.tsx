@@ -10,7 +10,6 @@ import MatchBrowser, { type WcMatch } from "@/components/MatchBrowser";
 import MatchStrip from "@/components/MatchStrip";
 import Moments from "@/components/Moments";
 import { useMatchStream, type StreamConfig } from "@/hooks/useMatchStream";
-import type { RefEvent, RefKind } from "@/lib/types";
 
 export type FixtureInfo = {
   id: string;
@@ -39,9 +38,8 @@ export default function Dashboard({ network }: { network: string }) {
   const [wcMatches, setWcMatches] = useState<WcMatch[]>([]);
   const [wcLoaded, setWcLoaded] = useState(false);
   const booted = useRef(false);
-  const [defaultFixtureId, setDefaultFixtureId] = useState<string | null>(null);
   const [cfg, setCfg] = useState<StreamConfig>({ source: "live", speed: 4 });
-  const { events, state, connection, inject } = useMatchStream(cfg);
+  const { events, state, connection, oddsSeries, oddsSimulated } = useMatchStream(cfg);
 
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
@@ -62,26 +60,21 @@ export default function Dashboard({ network }: { network: string }) {
       .then((d: { matches: WcMatch[] }) => setWcMatches(d.matches ?? []))
       .catch(() => {})
       .finally(() => setWcLoaded(true));
+    fetch("/api/fixtures")
+      .then((r) => r.json())
+      .then((d: { fixtures: FixtureInfo[] }) => setFixtures(d.fixtures ?? []))
+      .catch(() => {});
   }, []);
 
   // start on the most recently played match unless the URL chose otherwise
   useEffect(() => {
     if (booted.current || !wcLoaded || wcMatches.length === 0) return;
     booted.current = true;
-    setCfg({ source: "history", speed: "instant", fixture: wcMatches[0].id });
+    const m = wcMatches[0];
+    setCfg({ source: "history", speed: "instant", fixture: m.id, kickoff: m.startTime });
   }, [wcLoaded, wcMatches]);
 
-  useEffect(() => {
-    fetch("/api/fixtures")
-      .then((r) => r.json())
-      .then((d: { defaultFixtureId: string | null; fixtures: FixtureInfo[] }) => {
-        setFixtures(d.fixtures ?? []);
-        setDefaultFixtureId(d.defaultFixtureId);
-      })
-      .catch(() => {});
-  }, []);
-
-  const activeId = cfg.fixture ?? defaultFixtureId ?? undefined;
+  const activeId = cfg.fixture ?? undefined;
   const match = useMemo(
     () =>
       cfg.source === "history"
@@ -105,9 +98,7 @@ export default function Dashboard({ network }: { network: string }) {
       ? "LIVE · AWAITING FIXTURE"
       : cfg.source === "history"
         ? "MATCH RECORD"
-        : cfg.source === "replay"
-          ? `REPLAY · ${cfg.name ?? "match"}`.toUpperCase()
-          : "REHEARSAL · SCRIPTED MATCH";
+        : `REPLAY · ${cfg.name ?? "match"}`.toUpperCase();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -124,46 +115,8 @@ export default function Dashboard({ network }: { network: string }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const taps = useRef({ count: 0, at: 0 });
-  const onWordmarkTap = () => {
-    const now = Date.now();
-    taps.current = {
-      count: now - taps.current.at < 600 ? taps.current.count + 1 : 1,
-      at: now,
-    };
-    if (taps.current.count >= 3) {
-      taps.current.count = 0;
-      setDrawer((d) => !d);
-    }
-  };
-
-  const injectSeq = useRef(0);
-  const fabricate = (kind: RefKind, team: 1 | 2, detail: string): RefEvent => ({
-    id: `inj-${++injectSeq.current}`,
-    ts: Date.now(),
-    minute: state.minute ?? 0,
-    phase: state.phase === "NS" ? "H1" : state.phase,
-    team,
-    kind,
-    detail,
-    verify: { status: "pending" },
-  });
-  const onInject = (kind: RefKind) => {
-    const team: 1 | 2 = Math.random() < 0.5 ? 1 : 2;
-    if (kind === "var_start") {
-      inject([fabricate("var_start", team, "VAR · GOAL")]);
-      setTimeout(() => inject([fabricate("var_end", team, "GOAL · OVERTURNED")]), 1400);
-    } else if (kind === "yellow") {
-      inject([fabricate("yellow", team, "YELLOW CARD")]);
-    } else if (kind === "red") {
-      inject([fabricate("red", team, "RED CARD")]);
-    } else {
-      inject([fabricate("goal", team, "GOAL")]);
-    }
-  };
-
   const onSelectMatch = useCallback((m: WcMatch) => {
-    setCfg({ source: "history", speed: "instant", fixture: m.id });
+    setCfg({ source: "history", speed: "instant", fixture: m.id, kickoff: m.startTime });
     setBrowser(false);
   }, []);
 
@@ -182,7 +135,7 @@ export default function Dashboard({ network }: { network: string }) {
   const empty =
     cfg.source === "live"
       ? connection.status === "error"
-        ? "no live fixture · press m for world cup matches or d for controls"
+        ? "no live fixture · press m for world cup matches"
         : connection.status === "reconnecting"
           ? "stream unreachable · check TXLINE_API_TOKEN · retrying"
           : "connected · awaiting first decision"
@@ -203,8 +156,8 @@ export default function Dashboard({ network }: { network: string }) {
         sourceLabel={cfg.source.toUpperCase()}
         score={match ? state.score : null}
         teams={teams}
-        onWordmarkTap={onWordmarkTap}
         onMatches={() => setBrowser((b) => !b)}
+        onControls={() => setDrawer((d) => !d)}
       />
 
       <MatchStrip
@@ -231,6 +184,8 @@ export default function Dashboard({ network }: { network: string }) {
             teams={teams}
             kickoff={match?.startTime}
             matchKey={`${cfg.source}:${cfg.fixture ?? ""}`}
+            oddsSeries={oddsSeries}
+            oddsSimulated={oddsSimulated}
             replay={
               cfg.source === "history" && match
                 ? { active: replaying, onToggle: onToggleReplay }
@@ -291,7 +246,6 @@ export default function Dashboard({ network }: { network: string }) {
           connection={connection}
           network={network}
           fixtures={fixtures}
-          onInject={onInject}
           onClose={() => setDrawer(false)}
           reduced={reduced}
         />

@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import Link from "next/link";
 import type { TeamMeta } from "@/components/Dashboard";
 import ThemeToggle from "./ThemeToggle";
 
@@ -11,8 +12,8 @@ export default function TopBar({
   sourceLabel,
   score,
   teams,
-  onWordmarkTap,
   onMatches,
+  onControls,
 }: {
   matchTitle: string;
   phase: string;
@@ -20,18 +21,18 @@ export default function TopBar({
   sourceLabel: string;
   score: { 1: number; 2: number } | null;
   teams: TeamMeta;
-  onWordmarkTap: () => void;
   onMatches: () => void;
+  onControls: () => void;
 }) {
   const reduced = useReducedMotion() ?? false;
   return (
     <header className="stripes flex h-12 shrink-0 items-center gap-3 border-b border-border px-3 sm:px-4">
-      <button
-        onClick={onWordmarkTap}
-        className="wordmark cursor-default select-none font-display text-base font-bold tracking-[0.18em]"
+      <Link
+        href="/"
+        className="wordmark select-none font-display text-base font-bold tracking-[0.18em]"
       >
         REF
-      </button>
+      </Link>
       {score && (
         <motion.span
           initial={reduced ? false : { opacity: 0, y: -6 }}
@@ -87,6 +88,13 @@ export default function TopBar({
           · {sourceLabel}
         </span>
       </span>
+      <button
+        onClick={onControls}
+        aria-label="Controls"
+        className="label min-h-11 cursor-pointer px-1.5 hover:text-text"
+      >
+        ⚙
+      </button>
       <ThemeToggle />
     </header>
   );

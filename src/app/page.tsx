@@ -1,6 +1,5 @@
-import Dashboard from "@/components/Dashboard";
-import { network } from "@/lib/verify";
+import Landing from "@/components/Landing";
 
 export default function Page() {
-  return <Dashboard network={network()} />;
+  return <Landing />;
 }

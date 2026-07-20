@@ -4,6 +4,8 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { memo, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { TeamMeta } from "@/components/Dashboard";
 import Flag from "@/components/Flag";
+import MarketPulse from "@/components/MarketPulse";
+import type { OddsTick } from "@/lib/odds";
 import { loadBaselines } from "@/lib/baselines";
 import { ordinal, percentile, tierFor } from "@/lib/percentile";
 import type { MatchState } from "@/lib/reduce";
@@ -257,6 +259,8 @@ export default function Fairness({
   teams,
   kickoff,
   matchKey,
+  oddsSeries,
+  oddsSimulated,
   replay,
 }: {
   state: MatchState;
@@ -265,6 +269,8 @@ export default function Fairness({
   teams: TeamMeta;
   kickoff?: number;
   matchKey?: string;
+  oddsSeries: OddsTick[];
+  oddsSimulated: boolean;
   replay?: { active: boolean; onToggle: () => void };
 }) {
   const reduced = useReducedMotion() ?? false;
@@ -369,6 +375,16 @@ export default function Fairness({
               ))}
             </div>
           )}
+        </motion.div>
+
+        <motion.div variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } }}>
+          <MarketPulse
+            oddsSeries={oddsSeries}
+            events={events}
+            teams={teams}
+            simulated={oddsSimulated}
+            onHighlight={onHighlight}
+          />
         </motion.div>
 
         <motion.div variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } }}>

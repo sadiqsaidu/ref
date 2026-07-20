@@ -4,15 +4,8 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import type { FixtureInfo } from "@/components/Dashboard";
 import type { Connection, StreamConfig } from "@/hooks/useMatchStream";
-import type { RefKind } from "@/lib/types";
 
 const SPEEDS: (number | "instant")[] = [1, 4, 16, "instant"];
-const INJECTS: [string, RefKind][] = [
-  ["YELLOW", "yellow"],
-  ["RED", "red"],
-  ["VAR OVERTURN", "var_start"],
-  ["GOAL", "goal"],
-];
 
 export default function Drawer({
   cfg,
@@ -20,7 +13,6 @@ export default function Drawer({
   connection,
   network,
   fixtures,
-  onInject,
   onClose,
   reduced,
 }: {
@@ -29,7 +21,6 @@ export default function Drawer({
   connection: Connection;
   network: string;
   fixtures: FixtureInfo[];
-  onInject: (kind: RefKind) => void;
   onClose: () => void;
   reduced: boolean;
 }) {
@@ -49,7 +40,7 @@ export default function Drawer({
       className="fixed inset-y-0 right-0 z-50 flex w-72 flex-col gap-4 overflow-y-auto border-l border-border bg-panel p-3"
     >
       <div className="flex items-center justify-between">
-        <span className="label">Demo Controls</span>
+        <span className="label">Controls</span>
         <button onClick={onClose} className="label min-h-11 cursor-pointer px-2 hover:text-text">
           ESC
         </button>
@@ -58,7 +49,7 @@ export default function Drawer({
       <div>
         <div className="label mb-1.5">Source</div>
         <div className="flex gap-1">
-          {["live", "replay", "mock"].map((s) => (
+          {["live", "replay"].map((s) => (
             <button
               key={s}
               onClick={() => onCfg({ source: s })}
@@ -142,21 +133,6 @@ export default function Drawer({
             stream: {connection.status}
             {connection.status === "reconnecting" ? ` · attempt ${connection.attempt}` : ""}
           </span>
-        </div>
-      </div>
-
-      <div>
-        <div className="label mb-1.5">Inject Test Event</div>
-        <div className="grid grid-cols-2 gap-1">
-          {INJECTS.map(([label, kind]) => (
-            <button
-              key={kind}
-              onClick={() => onInject(kind)}
-              className="label min-h-11 cursor-pointer border border-border hover:text-text"
-            >
-              {label}
-            </button>
-          ))}
         </div>
       </div>
     </motion.aside>

@@ -7,16 +7,42 @@ next to a fairness panel comparing both teams' discipline against tournament
 baselines. All copy is descriptive and neutral: percentiles,
 "within normal range", "unusual", "rare".
 
-The screen is split into two panels:
+The landing page lives at **`/`**; the dashboard is at **`/app`**.
+
+The dashboard is split into two panels:
 
 - **DECISION LEDGER** (left / LEDGER tab on mobile) — newest-first list of
   every decision with minute stamps, team tags, severity accents, live VAR
   review pairing, and a verification mark per entry (pending ○ / anchored ✓
   linking to Solana explorer / failed ×).
-- **FAIRNESS** (right / FAIRNESS tab) — scoreline, mirror bar charts for
-  yellows, reds, fouls proxy, dangerous free kicks, corners and VAR counts, a
-  VAR summary box, percentile chips against tournament baselines, an
-  auto-composed verdict line, and a clickable match timeline.
+- **FAIRNESS** (right / FAIRNESS tab) — MARKET PULSE (see below), scoreline,
+  mirror bar charts for yellows, reds, fouls proxy, dangerous free kicks,
+  corners and VAR counts, a VAR summary box, percentile chips against
+  tournament baselines, an auto-composed verdict line, and a clickable match
+  timeline.
+
+## Market Pulse
+
+MARKET PULSE is the differentiator: consensus-odds impact analysis that
+quantifies what each refereeing decision cost, using the betting market as a
+**neutral, independent observer** — never as a place to bet. The app has zero
+betting functionality; it neither places, brokers, nor displays wagers.
+
+Each odds tick is normalized to de-vigged implied win probabilities (Team A,
+draw, Team B) and plotted over match time. Vertical hairlines mark major
+decisions; for each, impact is the change in the affected team's win
+probability from 60 seconds before to 60 seconds after (e.g. `RED CARD ·
+−14.2 PTS`). The framing is deliberately anti-conspiracy: a market that
+reprices **after** a decision becomes public — not before — is evidence the
+call was not known in advance. When every significant decision's pre-window is
+flat relative to its post-move, one muted line reads *"consensus odds reprice
+after decisions, not before — consistent with fair play."* There is no
+accusatory variant; if the condition does not hold, nothing is shown.
+
+Until a real StablePrice odds path is wired (one TODO const in
+`src/lib/sources/oddsLive.ts`), the chart runs a simulated walk driven by the
+match's real decisions, clearly badged **SIMULATED** so nothing synthetic is
+ever presented as real consensus.
 
 ## Prerequisites
 
@@ -32,13 +58,12 @@ npm install
 npm run dev
 ```
 
-Then open **http://localhost:3000** — the app opens on the **most recently
+Then open **http://localhost:3000** for the landing page, or go straight to
+**http://localhost:3000/app** — the dashboard opens on the **most recently
 played World Cup match** with its full record, plus a strip of recent-match
 cards under the top bar (tap to switch, "All ↗" expands the full browser).
-LIVE mode is available via the demo drawer or `?source=live`, with honest
-stream status in the footer until credentials are configured. A scripted
-rehearsal match exists at `?source=mock` — never shown unless explicitly
-requested.
+LIVE mode is available via the ⚙ controls or `?source=live`, with honest
+stream status in the footer until credentials are configured.
 
 The dev and production servers are both **pinned to port 3000**. If the port
 is taken, the command fails with `EADDRINUSE` instead of silently moving to
@@ -95,23 +120,21 @@ every match row in the browser shows its id as `#12345678`, and
 
 ## Demo modes and URL parameters
 
-The stream source is chosen per-URL:
+The stream source is chosen per-URL (relative to `/app`):
 
-| Parameter | Values                                  | Default | Meaning                                       |
-| --------- | --------------------------------------- | ------- | --------------------------------------------- |
-| `source`  | `live` / `history` / `replay` / `mock`  | `live`  | TxLINE stream / past match / file / scripted  |
-| `speed`   | `1`, `4`, `16`, `150`, `instant`        | `4`     | playback multiplier (history, replay, mock)   |
-| `name`    | replay file name                        | `match` | reads `data/replays/<name>.json`              |
-| `fixture` | numeric fixture id                      | env     | fixture for `live` and `history`              |
+| Parameter | Values                          | Default   | Meaning                                    |
+| --------- | ------------------------------- | --------- | ------------------------------------------ |
+| `source`  | `live` / `history` / `replay`   | `history` | TxLINE stream / past match / recorded file |
+| `speed`   | `1`, `4`, `16`, `150`, `instant`| `instant` | playback multiplier (history, replay)      |
+| `name`    | replay file name                | `match`   | reads `data/replays/<name>.json`           |
+| `fixture` | numeric fixture id              | env       | fixture for `live` and `history`           |
 
-Example: `http://localhost:3000/?source=replay&name=semifinal&speed=16`
+Example: `http://localhost:3000/app?source=replay&name=semifinal&speed=16`
 
-**Demo drawer**: press **`d`** (desktop) or **triple-tap the REF wordmark**
-(mobile) to open the hidden control drawer — switch source, pick from today's
-fixtures or type a fixture id, choose a replay file and speed, see
-network/connection state, and inject
-single test events (yellow, red, VAR overturn, goal) to rehearse the
-choreography. `Esc` closes it.
+**Controls**: press **`d`** or click the **⚙** in the top bar to open the
+control drawer — switch source (live/replay), pick from today's fixtures or
+type a fixture id, choose a replay file and speed, and see network/connection
+state. `Esc` closes it.
 
 ## Environment variables (.env.local)
 
@@ -179,12 +202,11 @@ score record for that fixture, even if it appears in the fixture snapshot.
 
 ## Demo-day runbook
 
-- Open on `?source=replay&name=<match>&speed=16` and walk through the
-  recorded controversy.
-- At kickoff, open the demo drawer and switch to LIVE with the final's
-  fixture id.
-- If the venue network or the feed misbehaves, switch to MOCK. The drawer's
-  inject buttons are for rehearsal only.
+- Open `/app` and pick the match from the strip, or `?source=history&fixture=<id>`
+  and walk through a recorded controversy — the record loads instantly and
+  MARKET PULSE replays the market's reaction.
+- For a live match, open the ⚙ controls and switch to LIVE with the fixture id.
+- If the feed misbehaves, fall back to a recorded `replay` file.
 
 ## Data notes
 
