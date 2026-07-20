@@ -1,10 +1,15 @@
-import type { MatchSource } from "@/lib/types";
+import type { MatchSource, RefKind } from "@/lib/types";
+import { historySource } from "@/lib/sources/history";
 import { liveSource } from "@/lib/sources/live";
 import { mockSource } from "@/lib/sources/mock";
 import { replaySource } from "@/lib/sources/replay";
 import { verifyEvent } from "@/lib/verify";
 
 export const dynamic = "force-dynamic";
+
+const VERIFIABLE: RefKind[] = [
+  "goal", "yellow", "red", "second_yellow", "corner", "penalty_outcome",
+];
 
 export async function GET(req: Request) {
   const p = new URL(req.url).searchParams;
@@ -15,16 +20,33 @@ export async function GET(req: Request) {
   const name = (p.get("name") ?? "match").replace(/[^a-z0-9_-]/gi, "");
   const fixture = p.get("fixture") ?? process.env.TXLINE_FIXTURE_ID ?? "";
 
-  if (sourceName === "live" && !fixture) {
+  if ((sourceName === "live" || sourceName === "history") && !fixture) {
     return Response.json({ error: "no fixture id configured" }, { status: 400 });
   }
 
   const source: MatchSource =
     sourceName === "live"
       ? liveSource(fixture)
-      : sourceName === "replay"
-        ? replaySource(name, speed)
-        : mockSource(speed);
+      : sourceName === "history"
+        ? historySource(fixture, speedParam ? speed : Infinity)
+        : sourceName === "replay"
+          ? replaySource(name, speed)
+          : mockSource(speed);
+
+  const verifiable = sourceName === "live" || sourceName === "history";
+  let running = 0;
+  const queue: (() => void)[] = [];
+  const schedule = (fn: () => Promise<void>) => {
+    const go = () => {
+      running++;
+      fn().finally(() => {
+        running--;
+        queue.shift()?.();
+      });
+    };
+    if (running < 6) go();
+    else queue.push(go);
+  };
 
   const enc = new TextEncoder();
   let heartbeat: ReturnType<typeof setInterval>;
@@ -39,12 +61,14 @@ export async function GET(req: Request) {
       source.subscribe(
         (e) => {
           write(`id: ${e.id}\nevent: ref\ndata: ${JSON.stringify(e)}\n\n`);
-          if (sourceName === "live") {
-            verifyEvent(e).then((verify) => {
-              if (verify.status !== "pending") {
-                write(`event: verify\ndata: ${JSON.stringify({ id: e.id, verify })}\n\n`);
-              }
-            });
+          if (verifiable && VERIFIABLE.includes(e.kind)) {
+            schedule(() =>
+              verifyEvent(e, fixture).then((verify) => {
+                if (verify.status !== "pending") {
+                  write(`event: verify\ndata: ${JSON.stringify({ id: e.id, verify })}\n\n`);
+                }
+              }),
+            );
           }
         },
         (up) => write(`event: upstream\ndata: ${JSON.stringify({ up })}\n\n`),

@@ -88,3 +88,32 @@ body {
     animation: none;
   }
 }
+
+button,
+a {
+  transition:
+    color 0.15s,
+    background-color 0.15s,
+    border-color 0.15s;
+}
+
+.row-hover:hover {
+  background: color-mix(in srgb, var(--muted) 8%, transparent);
+}
+
+:root:not([data-theme="light"]) .glow {
+  text-shadow: 0 0 18px color-mix(in srgb, currentcolor 35%, transparent);
+}
+
+:root:not([data-theme="light"]) body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.012) 0 1px,
+    transparent 1px 3px
+  );
+}

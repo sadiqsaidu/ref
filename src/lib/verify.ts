@@ -18,8 +18,10 @@ const STAT_KEYS: Partial<Record<RefEvent["kind"], string>> = {
   corner: "7,8",
 };
 
-export async function verifyEvent(event: RefEvent): Promise<Verify> {
-  const fixtureId = process.env.TXLINE_FIXTURE_ID;
+export async function verifyEvent(
+  event: RefEvent,
+  fixtureId = process.env.TXLINE_FIXTURE_ID,
+): Promise<Verify> {
   const seq = Number.parseInt(event.id, 10);
   if (!fixtureId || !Number.isInteger(seq) || seq <= 0) return { status: "pending" };
   try {

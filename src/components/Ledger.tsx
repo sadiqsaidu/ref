@@ -111,7 +111,7 @@ const Row = memo(
         initial={reduced ? false : { opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25 }}
-        className="relative flex items-baseline gap-2 border-l-2 px-2 py-1.5 text-xs"
+        className="row-hover relative flex items-baseline gap-2 border-l-2 px-2 py-1.5 text-xs"
         style={{
           borderLeftColor: entry.accent,
           background: highlighted ? "color-mix(in srgb, var(--muted) 14%, transparent)" : undefined,
@@ -241,15 +241,16 @@ export default function Ledger({
         <span className="label tabular-nums">{entries.length}</span>
         <span className="ml-auto flex gap-1">
           {Object.keys(FILTERS).map((f) => (
-            <button
+            <motion.button
               key={f}
+              whileTap={reduced ? undefined : { scale: 0.92 }}
               onClick={() => setFilter(f)}
               className={`label cursor-pointer px-1.5 py-0.5 ${
                 filter === f ? "bg-text !text-panel" : "hover:text-text"
               }`}
             >
               {f}
-            </button>
+            </motion.button>
           ))}
         </span>
       </div>

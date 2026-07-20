@@ -1,11 +1,12 @@
 "use client";
 
 import { useReducedMotion } from "framer-motion";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import TopBar from "@/components/TopBar";
 import Ledger from "@/components/Ledger";
 import Fairness from "@/components/Fairness";
 import Drawer from "@/components/Drawer";
+import MatchBrowser, { type WcMatch } from "@/components/MatchBrowser";
 import Moments from "@/components/Moments";
 import { useMatchStream, type StreamConfig } from "@/hooks/useMatchStream";
 import type { RefEvent, RefKind } from "@/lib/types";
@@ -25,12 +26,16 @@ const FALLBACK_TEAMS: TeamMeta = {
   2: { code: "B", name: "Team B" },
 };
 
+const REPLAY_SPEED = 150;
+
 export default function Dashboard({ network }: { network: string }) {
   const reduced = useReducedMotion() ?? false;
   const [tab, setTab] = useState<"ledger" | "fairness">("ledger");
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const [drawer, setDrawer] = useState(false);
+  const [browser, setBrowser] = useState(false);
   const [fixtures, setFixtures] = useState<FixtureInfo[]>([]);
+  const [wcMatches, setWcMatches] = useState<WcMatch[]>([]);
   const [defaultFixtureId, setDefaultFixtureId] = useState<string | null>(null);
   const [cfg, setCfg] = useState<StreamConfig>({ source: "live", speed: 4 });
   const { events, state, connection, inject } = useMatchStream(cfg);
@@ -57,34 +62,44 @@ export default function Dashboard({ network }: { network: string }) {
       .catch(() => {});
   }, []);
 
-  const fixture = useMemo(() => {
-    const id = cfg.fixture ?? defaultFixtureId ?? undefined;
-    return fixtures.find((f) => f.id === id);
-  }, [fixtures, cfg.fixture, defaultFixtureId]);
+  const activeId = cfg.fixture ?? defaultFixtureId ?? undefined;
+  const match = useMemo(
+    () =>
+      cfg.source === "history"
+        ? wcMatches.find((m) => m.id === activeId)
+        : cfg.source === "live"
+          ? fixtures.find((f) => f.id === activeId)
+          : undefined,
+    [cfg.source, wcMatches, fixtures, activeId],
+  );
 
-  const teams: TeamMeta =
-    cfg.source === "live" && fixture
-      ? {
-          1: { code: fixture.p1.slice(0, 3).toUpperCase(), name: fixture.p1 },
-          2: { code: fixture.p2.slice(0, 3).toUpperCase(), name: fixture.p2 },
-        }
-      : FALLBACK_TEAMS;
+  const teams: TeamMeta = match
+    ? {
+        1: { code: match.p1.slice(0, 3).toUpperCase(), name: match.p1 },
+        2: { code: match.p2.slice(0, 3).toUpperCase(), name: match.p2 },
+      }
+    : FALLBACK_TEAMS;
 
-  const matchTitle =
-    cfg.source === "live"
-      ? fixture
-        ? `${fixture.p1} v ${fixture.p2} · ${fixture.competition}`.toUpperCase()
-        : "LIVE · AWAITING FIXTURE"
-      : cfg.source === "replay"
-        ? `REPLAY · ${cfg.name ?? "match"}`.toUpperCase()
-        : "REHEARSAL · SCRIPTED MATCH";
+  const matchTitle = match
+    ? `${match.p1} v ${match.p2} · ${match.competition}`.toUpperCase()
+    : cfg.source === "live"
+      ? "LIVE · AWAITING FIXTURE"
+      : cfg.source === "history"
+        ? "MATCH RECORD"
+        : cfg.source === "replay"
+          ? `REPLAY · ${cfg.name ?? "match"}`.toUpperCase()
+          : "REHEARSAL · SCRIPTED MATCH";
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement | null)?.tagName;
       if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
       if (e.key === "d") setDrawer((d) => !d);
-      if (e.key === "Escape") setDrawer(false);
+      if (e.key === "m") setBrowser((b) => !b);
+      if (e.key === "Escape") {
+        setDrawer(false);
+        setBrowser(false);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -128,6 +143,15 @@ export default function Dashboard({ network }: { network: string }) {
     }
   };
 
+  const onSelectMatch = useCallback((m: WcMatch) => {
+    setCfg({ source: "history", speed: "instant", fixture: m.id });
+    setBrowser(false);
+  }, []);
+
+  const replaying = cfg.source === "history" && cfg.speed !== "instant";
+  const onToggleReplay = () =>
+    setCfg((c) => ({ ...c, speed: c.speed === "instant" ? REPLAY_SPEED : "instant" }));
+
   const lastEvent = state.lastTs
     ? new Date(state.lastTs).toLocaleTimeString([], { hour12: false })
     : "—";
@@ -139,11 +163,15 @@ export default function Dashboard({ network }: { network: string }) {
   const empty =
     cfg.source === "live"
       ? connection.status === "error"
-        ? "no fixture configured · set TXLINE_FIXTURE_ID or press d"
+        ? "no live fixture · press m for world cup matches or d for controls"
         : connection.status === "reconnecting"
           ? "stream unreachable · check TXLINE_API_TOKEN · retrying"
           : "connected · awaiting first decision"
-      : "awaiting first decision";
+      : cfg.source === "history"
+        ? connection.status === "reconnecting"
+          ? "match record unavailable · check TXLINE_API_TOKEN · retrying"
+          : "loading match record…"
+        : "awaiting first decision";
 
   return (
     <div className="flex h-dvh flex-col">
@@ -153,6 +181,7 @@ export default function Dashboard({ network }: { network: string }) {
         live={connection.status === "open"}
         sourceLabel={cfg.source.toUpperCase()}
         onWordmarkTap={onWordmarkTap}
+        onMatches={() => setBrowser((b) => !b)}
       />
 
       <main className="grid min-h-0 flex-1 lg:grid-cols-[2fr_3fr]">
@@ -169,6 +198,11 @@ export default function Dashboard({ network }: { network: string }) {
             events={events}
             onHighlight={setHighlightId}
             teams={teams}
+            replay={
+              cfg.source === "history" && match
+                ? { active: replaying, onToggle: onToggleReplay }
+                : undefined
+            }
           />
         </div>
       </main>
@@ -177,7 +211,13 @@ export default function Dashboard({ network }: { network: string }) {
         stream: {streamLabel} · last event: {lastEvent} · network: {network}
       </footer>
 
-      <nav className="grid shrink-0 grid-cols-2 border-t border-border lg:hidden">
+      <nav className="grid shrink-0 grid-cols-3 border-t border-border lg:hidden">
+        <button
+          onClick={() => setBrowser(true)}
+          className="label min-h-11 cursor-pointer"
+        >
+          matches
+        </button>
         {(["ledger", "fairness"] as const).map((t) => (
           <button
             key={t}
@@ -191,7 +231,19 @@ export default function Dashboard({ network }: { network: string }) {
         ))}
       </nav>
 
-      <Moments events={events} reduced={reduced} />
+      <Moments
+        key={`${cfg.source}:${cfg.fixture ?? ""}:${cfg.speed}`}
+        events={events}
+        reduced={reduced}
+      />
+      <MatchBrowser
+        open={browser}
+        selectedId={cfg.source === "history" ? cfg.fixture : undefined}
+        onSelect={onSelectMatch}
+        onClose={() => setBrowser(false)}
+        onLoaded={setWcMatches}
+        reduced={reduced}
+      />
       {drawer && (
         <Drawer
           cfg={cfg}

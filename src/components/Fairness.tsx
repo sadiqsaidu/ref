@@ -3,6 +3,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import type { TeamMeta } from "@/components/Dashboard";
+import Flag from "@/components/Flag";
 import { loadBaselines } from "@/lib/baselines";
 import { ordinal, percentile, tierFor } from "@/lib/percentile";
 import type { MatchState } from "@/lib/reduce";
@@ -234,11 +235,13 @@ export default function Fairness({
   events,
   onHighlight,
   teams,
+  replay,
 }: {
   state: MatchState;
   events: RefEvent[];
   onHighlight: (id: string | null) => void;
   teams: TeamMeta;
+  replay?: { active: boolean; onToggle: () => void };
 }) {
   const reduced = useReducedMotion() ?? false;
   const baselines = useMemo(loadBaselines, []);
@@ -262,17 +265,38 @@ export default function Fairness({
 
   return (
     <section className="flex min-h-0 flex-1 flex-col bg-panel">
-      <div className="label shrink-0 border-b border-border px-3 py-2">Fairness</div>
+      <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-2">
+        <span className="label">Fairness</span>
+        {replay && (
+          <motion.button
+            whileTap={{ scale: 0.94 }}
+            onClick={replay.onToggle}
+            className={`label min-h-6 cursor-pointer border px-2 ${
+              replay.active
+                ? "border-green !text-green"
+                : "border-border hover:border-green hover:!text-green"
+            }`}
+          >
+            {replay.active ? "■ Stop Replay" : "▶ Replay Match"}
+          </motion.button>
+        )}
+      </div>
       <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-3">
         <div className="border-b border-border pb-4">
           <div className="flex items-end justify-between gap-2">
-            <span className="label max-w-[30%] truncate !text-amber">{teams[1].name}</span>
-            <span className="bignum text-5xl">
+            <span className="flex max-w-[30%] items-center gap-1.5">
+              <Flag name={teams[1].name} />
+              <span className="label truncate !text-amber">{teams[1].name}</span>
+            </span>
+            <span className="bignum glow text-5xl">
               <Digit value={state.score[1]} color="var(--amber)" />
               <span className="text-muted"> — </span>
               <Digit value={state.score[2]} color="var(--blue)" />
             </span>
-            <span className="label max-w-[30%] truncate !text-blue">{teams[2].name}</span>
+            <span className="flex max-w-[30%] items-center justify-end gap-1.5">
+              <span className="label truncate !text-blue">{teams[2].name}</span>
+              <Flag name={teams[2].name} />
+            </span>
           </div>
           <div className="label mt-2 text-center">
             {state.phase}

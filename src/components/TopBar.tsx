@@ -9,12 +9,14 @@ export default function TopBar({
   live,
   sourceLabel,
   onWordmarkTap,
+  onMatches,
 }: {
   matchTitle: string;
   phase: string;
   live: boolean;
   sourceLabel: string;
   onWordmarkTap: () => void;
+  onMatches: () => void;
 }) {
   const reduced = useReducedMotion() ?? false;
   return (
@@ -45,6 +47,13 @@ export default function TopBar({
           </motion.span>
         </AnimatePresence>
       </span>
+      <motion.button
+        whileTap={reduced ? undefined : { scale: 0.94 }}
+        onClick={onMatches}
+        className="label hidden min-h-11 cursor-pointer border border-border px-2 hover:border-green hover:!text-green lg:block"
+      >
+        Matches
+      </motion.button>
       <span className="ml-auto flex items-center gap-1.5">
         <span
           className={`size-1.5 rounded-full ${

@@ -75,16 +75,30 @@ causes, in order of likelihood:
    packages → `npm install`; syntax error → fix it) is the real cause; the
    browser error is just the symptom.
 
+## Browsing World Cup matches
+
+Press **`m`** (or the MATCHES button in the top bar / bottom tab on mobile)
+to open the World Cup 2026 match browser. It lists every tournament fixture
+with country flags; selecting one loads the full match record from TxLINE's
+historical endpoint — complete decision ledger, discipline stats, and
+verification marks appear instantly, with a **▶ REPLAY MATCH** button in the
+fairness header that plays the match back as a ~45-second highlight reel
+(score digits roll, bars grow, big moments fire). No `TXLINE_FIXTURE_ID`
+needed — that variable is now only an optional default for LIVE mode.
+
+Flags are loaded from flagcdn.com; teams without a mapped flag fall back to a
+three-letter code chip.
+
 ## Demo modes and URL parameters
 
 The stream source is chosen per-URL:
 
-| Parameter | Values                       | Default | Meaning                                  |
-| --------- | ---------------------------- | ------- | ---------------------------------------- |
-| `source`  | `live` / `replay` / `mock`   | `live`  | TxLINE stream / recorded file / scripted |
-| `speed`   | `1`, `4`, `16`, `instant`    | `4`     | playback multiplier (mock + replay)      |
-| `name`    | replay file name             | `match` | reads `data/replays/<name>.json`         |
-| `fixture` | numeric fixture id           | env     | overrides `TXLINE_FIXTURE_ID` for live   |
+| Parameter | Values                                  | Default | Meaning                                       |
+| --------- | --------------------------------------- | ------- | --------------------------------------------- |
+| `source`  | `live` / `history` / `replay` / `mock`  | `live`  | TxLINE stream / past match / file / scripted  |
+| `speed`   | `1`, `4`, `16`, `150`, `instant`        | `4`     | playback multiplier (history, replay, mock)   |
+| `name`    | replay file name                        | `match` | reads `data/replays/<name>.json`              |
+| `fixture` | numeric fixture id                      | env     | fixture for `live` and `history`              |
 
 Example: `http://localhost:3000/?source=replay&name=semifinal&speed=16`
 
@@ -109,7 +123,7 @@ cp .env.example .env.local
 | `TXLINE_API_ORIGIN` | `https://txline.txodds.com`  | TxLINE API host (default: mainnet)             |
 | `TXLINE_NETWORK`    | `mainnet` or `devnet`        | drives explorer links + footer label           |
 | `TXLINE_API_TOKEN`  | `…`                          | your activated API token (see below)           |
-| `TXLINE_FIXTURE_ID` | `17952170`                   | the match to stream and verify                 |
+| `TXLINE_FIXTURE_ID` | `17952170`                   | optional: default fixture for LIVE mode        |
 
 Restart the dev server after changing `.env.local`. All credentials stay
 server-side — the browser only ever receives normalized events.
