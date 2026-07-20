@@ -7,6 +7,7 @@ import Ledger from "@/components/Ledger";
 import Fairness from "@/components/Fairness";
 import Drawer from "@/components/Drawer";
 import MatchBrowser, { type WcMatch } from "@/components/MatchBrowser";
+import MatchStrip from "@/components/MatchStrip";
 import Moments from "@/components/Moments";
 import { useMatchStream, type StreamConfig } from "@/hooks/useMatchStream";
 import type { RefEvent, RefKind } from "@/lib/types";
@@ -36,6 +37,8 @@ export default function Dashboard({ network }: { network: string }) {
   const [browser, setBrowser] = useState(false);
   const [fixtures, setFixtures] = useState<FixtureInfo[]>([]);
   const [wcMatches, setWcMatches] = useState<WcMatch[]>([]);
+  const [wcLoaded, setWcLoaded] = useState(false);
+  const booted = useRef(false);
   const [defaultFixtureId, setDefaultFixtureId] = useState<string | null>(null);
   const [cfg, setCfg] = useState<StreamConfig>({ source: "live", speed: 4 });
   const { events, state, connection, inject } = useMatchStream(cfg);
@@ -43,6 +46,7 @@ export default function Dashboard({ network }: { network: string }) {
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
     if ([...p.keys()].length === 0) return;
+    booted.current = true;
     const speedParam = p.get("speed");
     setCfg({
       source: p.get("source") ?? "live",
@@ -51,6 +55,21 @@ export default function Dashboard({ network }: { network: string }) {
       fixture: p.get("fixture") ?? undefined,
     });
   }, []);
+
+  useEffect(() => {
+    fetch("/api/matches")
+      .then((r) => r.json())
+      .then((d: { matches: WcMatch[] }) => setWcMatches(d.matches ?? []))
+      .catch(() => {})
+      .finally(() => setWcLoaded(true));
+  }, []);
+
+  // start on the most recently played match unless the URL chose otherwise
+  useEffect(() => {
+    if (booted.current || !wcLoaded || wcMatches.length === 0) return;
+    booted.current = true;
+    setCfg({ source: "history", speed: "instant", fixture: wcMatches[0].id });
+  }, [wcLoaded, wcMatches]);
 
   useEffect(() => {
     fetch("/api/fixtures")
@@ -180,8 +199,18 @@ export default function Dashboard({ network }: { network: string }) {
         phase={`${state.phase}${state.minute !== null ? ` ${state.minute}'` : ""}`}
         live={connection.status === "open"}
         sourceLabel={cfg.source.toUpperCase()}
+        score={match ? state.score : null}
+        teams={teams}
         onWordmarkTap={onWordmarkTap}
         onMatches={() => setBrowser((b) => !b)}
+      />
+
+      <MatchStrip
+        matches={wcMatches}
+        activeId={cfg.source === "history" ? cfg.fixture : undefined}
+        onSelect={onSelectMatch}
+        onExpand={() => setBrowser(true)}
+        reduced={reduced}
       />
 
       <main className="grid min-h-0 flex-1 lg:grid-cols-[2fr_3fr]">
@@ -199,6 +228,7 @@ export default function Dashboard({ network }: { network: string }) {
             onHighlight={setHighlightId}
             teams={teams}
             kickoff={match?.startTime}
+            matchKey={`${cfg.source}:${cfg.fixture ?? ""}`}
             replay={
               cfg.source === "history" && match
                 ? { active: replaying, onToggle: onToggleReplay }
@@ -241,14 +271,15 @@ export default function Dashboard({ network }: { network: string }) {
       <Moments
         key={`${cfg.source}:${cfg.fixture ?? ""}:${cfg.speed}`}
         events={events}
+        teams={teams}
         reduced={reduced}
       />
       <MatchBrowser
         open={browser}
+        matches={wcLoaded ? wcMatches : null}
         selectedId={cfg.source === "history" ? cfg.fixture : undefined}
         onSelect={onSelectMatch}
         onClose={() => setBrowser(false)}
-        onLoaded={setWcMatches}
         reduced={reduced}
       />
       {drawer && (

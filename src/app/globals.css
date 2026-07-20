@@ -114,6 +114,14 @@ a {
   background-attachment: fixed;
 }
 
+.stripes {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    color-mix(in srgb, var(--text) 3%, transparent) 0 6px,
+    transparent 6px 12px
+  );
+}
+
 .wordmark {
   background: linear-gradient(90deg, var(--amber), var(--green) 85%);
   -webkit-background-clip: text;

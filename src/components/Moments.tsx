@@ -2,15 +2,28 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
+import type { TeamMeta } from "@/components/Dashboard";
 import type { RefEvent } from "@/lib/types";
 
-type Moment = { key: string; type: "red" | "overturn" };
+type Moment = {
+  key: string;
+  type: "red" | "overturn" | "goal";
+  team: 1 | 2 | null;
+};
+
+const BANNERS: Record<Moment["type"], { text: string; color: string }> = {
+  goal: { text: "GOAL", color: "var(--green)" },
+  red: { text: "RED CARD", color: "var(--red)" },
+  overturn: { text: "OVERTURNED", color: "var(--amber)" },
+};
 
 export default function Moments({
   events,
+  teams,
   reduced,
 }: {
   events: RefEvent[];
+  teams: TeamMeta;
   reduced: boolean;
 }) {
   const seen = useRef(0);
@@ -24,48 +37,52 @@ export default function Moments({
     if (reduced || Date.now() - mounted.current < 1500) return;
     const add: Moment[] = [];
     for (const e of fresh) {
-      if (e.kind === "red" || e.kind === "second_yellow") add.push({ key: e.id, type: "red" });
+      if (e.kind === "goal") add.push({ key: e.id, type: "goal", team: e.team });
+      if (e.kind === "red" || e.kind === "second_yellow")
+        add.push({ key: e.id, type: "red", team: e.team });
       if (e.kind === "var_end" && e.detail.includes("OVERTURNED"))
-        add.push({ key: e.id, type: "overturn" });
+        add.push({ key: e.id, type: "overturn", team: e.team });
     }
     if (!add.length) return;
     setMoments((m) => [...m, ...add]);
     for (const a of add) {
       setTimeout(
         () => setMoments((m) => m.filter((x) => x.key !== a.key)),
-        a.type === "red" ? 1100 : 1900,
+        a.type === "goal" ? 2600 : 2900,
       );
     }
   }, [events, reduced]);
 
   return (
-    <AnimatePresence>
-      {moments.map((m) =>
-        m.type === "red" ? (
-          <svg
-            key={m.key}
-            className="pointer-events-none fixed inset-0 z-40 size-full"
-          >
-            <motion.rect
-              x="1"
-              y="1"
-              width="99%"
-              height="99%"
-              fill="none"
-              stroke="var(--red)"
-              strokeWidth="2"
-              initial={{ pathLength: 0, opacity: 1 }}
-              animate={{ pathLength: 1, opacity: [1, 1, 0] }}
-              transition={{
-                pathLength: { duration: 0.7, ease: "easeInOut" },
-                opacity: { duration: 1, times: [0, 0.8, 1] },
-              }}
-            />
-          </svg>
-        ) : (
-          <div key={m.key} className="pointer-events-none fixed inset-0 z-40">
+    <>
+      <AnimatePresence>
+        {moments
+          .filter((m) => m.type === "red")
+          .map((m) => (
+            <svg key={`sweep-${m.key}`} className="pointer-events-none fixed inset-0 z-40 size-full">
+              <motion.rect
+                x="1"
+                y="1"
+                width="99%"
+                height="99%"
+                fill="none"
+                stroke="var(--red)"
+                strokeWidth="2"
+                initial={{ pathLength: 0, opacity: 1 }}
+                animate={{ pathLength: 1, opacity: [1, 1, 0] }}
+                transition={{
+                  pathLength: { duration: 0.7, ease: "easeInOut" },
+                  opacity: { duration: 1, times: [0, 0.8, 1] },
+                }}
+              />
+            </svg>
+          ))}
+        {moments
+          .filter((m) => m.type === "overturn")
+          .map((m) => (
             <motion.div
-              className="absolute inset-0"
+              key={`glow-${m.key}`}
+              className="pointer-events-none fixed inset-0 z-40"
               initial={{ opacity: 0 }}
               animate={{ opacity: [0, 1, 0] }}
               transition={{ duration: 1.6, times: [0, 0.3, 1] }}
@@ -73,22 +90,39 @@ export default function Moments({
                 boxShadow: "inset 0 0 70px color-mix(in srgb, var(--amber) 35%, transparent)",
               }}
             />
-            <motion.div
-              className="label absolute left-1/2 top-1/3 border-2 px-4 py-2 !text-sm"
-              style={{ borderColor: "var(--amber)", color: "var(--amber)", background: "var(--panel)" }}
-              initial={{ x: "-50%", scale: 1.7, opacity: 0 }}
-              animate={{
-                x: ["-50%", "-50%", "-50%", "-150%"],
-                scale: [1.7, 1, 1, 0.85],
-                opacity: [0, 1, 1, 0],
-              }}
-              transition={{ duration: 1.8, times: [0, 0.2, 0.75, 1] }}
-            >
-              Overturned
-            </motion.div>
-          </div>
-        ),
-      )}
-    </AnimatePresence>
+          ))}
+      </AnimatePresence>
+      <div className="pointer-events-none fixed bottom-10 left-3 z-40 flex flex-col gap-2">
+        <AnimatePresence>
+          {moments.map((m) => {
+            const b = BANNERS[m.type];
+            return (
+              <motion.div
+                key={m.key}
+                initial={{ x: -380, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: -380, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 260, damping: 26 }}
+                className="flex overflow-hidden rounded-[4px] border border-border shadow-lg"
+              >
+                <span
+                  className="-skew-x-6 -ml-1 px-3 py-1.5 pl-4 font-display text-sm font-bold"
+                  style={{ background: b.color, color: "var(--panel)" }}
+                >
+                  <span className="inline-block skew-x-6">{b.text}</span>
+                </span>
+                <span className="flex items-center gap-1.5 bg-panel px-3 font-display text-sm font-bold">
+                  {m.team && (
+                    <span style={{ color: m.team === 1 ? "var(--amber)" : "var(--blue)" }}>
+                      {teams[m.team].name.toUpperCase()}
+                    </span>
+                  )}
+                </span>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+      </div>
+    </>
   );
 }

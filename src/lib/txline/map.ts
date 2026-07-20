@@ -55,12 +55,27 @@ const KIND_LABELS: Partial<Record<RefKind, string>> = {
 const toMs = (t: number) => (t < 1e12 ? t * 1000 : t);
 const spaced = (s: string) => s.replace(/([a-z])([A-Z])/g, "$1 $2").toUpperCase();
 
-// feed records appear in camelCase or PascalCase depending on endpoint
+const NUMERIC_FIELDS = [
+  "seq", "ts", "statusId", "participant", "minute", "period", "id", "startTime",
+] as const;
+
+// feed records appear in camelCase or PascalCase depending on endpoint, and
+// numeric fields (including stat values) sometimes arrive as strings
 export function normalizeRaw(raw: Record<string, unknown>): RawScore {
-  if (raw.seq !== undefined || raw.ts !== undefined) return raw as RawScore;
-  const out: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(raw)) {
-    out[k === "Data" || k === "PlayerStats" ? k : k.charAt(0).toLowerCase() + k.slice(1)] = v;
+  let out: Record<string, unknown>;
+  if (raw.seq !== undefined || raw.ts !== undefined) {
+    out = { ...raw };
+  } else {
+    out = {};
+    for (const [k, v] of Object.entries(raw)) {
+      out[k === "Data" || k === "PlayerStats" ? k : k.charAt(0).toLowerCase() + k.slice(1)] = v;
+    }
+  }
+  for (const f of NUMERIC_FIELDS) {
+    if (typeof out[f] === "string") {
+      const n = Number(out[f]);
+      if (Number.isFinite(n)) out[f] = n;
+    }
   }
   return out as RawScore;
 }
@@ -89,9 +104,10 @@ export function createMapper() {
 
   function applyStats(raw: RawScore): Delta[] {
     if (!raw.stats) return [];
-    for (const [key, val] of Object.entries(raw.stats)) {
+    for (const [key, rawVal] of Object.entries(raw.stats)) {
       const k = Number(key);
-      if (!Number.isFinite(k) || typeof val !== "number") continue;
+      const val = Number(rawVal);
+      if (!Number.isFinite(k) || !Number.isFinite(val)) continue;
       const base = k < 1000 ? k : k % 1000;
       const prefix = k - base;
       if (!(base in BASE_KINDS) || prefix === 6000) continue;

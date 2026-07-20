@@ -32,12 +32,12 @@ npm install
 npm run dev
 ```
 
-Then open **http://localhost:3000** — the app starts in **LIVE mode**: it
-streams the fixture from `TXLINE_FIXTURE_ID` (or one picked in the demo
-drawer), resolves real team names from the day's fixture list, and shows an
-honest stream status in the footer until credentials are configured (see
-below). For a zero-configuration rehearsal there is still a scripted match at
-`http://localhost:3000/?source=mock` — it is never shown unless explicitly
+Then open **http://localhost:3000** — the app opens on the **most recently
+played World Cup match** with its full record, plus a strip of recent-match
+cards under the top bar (tap to switch, "All ↗" expands the full browser).
+LIVE mode is available via the demo drawer or `?source=live`, with honest
+stream status in the footer until credentials are configured. A scripted
+rehearsal match exists at `?source=mock` — never shown unless explicitly
 requested.
 
 The dev and production servers are both **pinned to port 3000**. If the port
@@ -88,6 +88,10 @@ needed — that variable is now only an optional default for LIVE mode.
 
 Flags are loaded from flagcdn.com; teams without a mapped flag fall back to a
 three-letter code chip.
+
+**Finding a fixture id** (for `record-replay.mts`, the drawer, or `?fixture=`):
+every match row in the browser shows its id as `#12345678`, and
+`curl -s localhost:3000/api/matches` lists all World Cup fixtures with ids.
 
 ## Demo modes and URL parameters
 

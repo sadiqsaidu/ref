@@ -1,7 +1,6 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useState } from "react";
 import Flag from "@/components/Flag";
 
 export type WcMatch = {
@@ -14,33 +13,20 @@ export type WcMatch = {
 
 export default function MatchBrowser({
   open,
+  matches,
   selectedId,
   onSelect,
   onClose,
-  onLoaded,
   reduced,
 }: {
   open: boolean;
+  matches: WcMatch[] | null;
   selectedId: string | undefined;
   onSelect: (m: WcMatch) => void;
   onClose: () => void;
-  onLoaded: (matches: WcMatch[]) => void;
   reduced: boolean;
 }) {
-  const [matches, setMatches] = useState<WcMatch[] | null>(null);
-  const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    if (!open || matches) return;
-    fetch("/api/matches")
-      .then((r) => r.json())
-      .then((d: { matches: WcMatch[] }) => {
-        setMatches(d.matches);
-        onLoaded(d.matches);
-        if (d.matches.length === 0) setFailed(true);
-      })
-      .catch(() => setFailed(true));
-  }, [open, matches, onLoaded]);
+  const failed = matches !== null && matches.length === 0;
 
   const dayOf = (t: number) =>
     new Date(t).toLocaleDateString([], { month: "short", day: "numeric" });
@@ -127,7 +113,8 @@ export default function MatchBrowser({
                         </span>
                         <Flag name={m.p1} />
                         <span className="min-w-0 flex-1 truncate">
-                          {m.p1} <span className="text-muted">v</span> {m.p2}
+                          {m.p1} <span className="text-muted">v</span> {m.p2}{" "}
+                          <span className="text-[9px] text-muted">#{m.id}</span>
                         </span>
                         <Flag name={m.p2} />
                       </motion.button>

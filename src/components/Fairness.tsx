@@ -256,6 +256,7 @@ export default function Fairness({
   onHighlight,
   teams,
   kickoff,
+  matchKey,
   replay,
 }: {
   state: MatchState;
@@ -263,6 +264,7 @@ export default function Fairness({
   onHighlight: (id: string | null) => void;
   teams: TeamMeta;
   kickoff?: number;
+  matchKey?: string;
   replay?: { active: boolean; onToggle: () => void };
 }) {
   const reduced = useReducedMotion() ?? false;
@@ -287,8 +289,15 @@ export default function Fairness({
 
   return (
     <section className="flex min-h-0 flex-1 flex-col bg-panel">
-      <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-2">
-        <span className="label">Fairness</span>
+      <div className="stripes flex shrink-0 items-center justify-between border-b border-border px-3 py-2">
+        <span className="-skew-x-6 rounded-[2px] bg-amber px-2 py-0.5">
+          <span
+            className="inline-block skew-x-6 font-display text-[11px] font-bold uppercase tracking-wider"
+            style={{ color: "var(--panel)" }}
+          >
+            Fairness
+          </span>
+        </span>
         {replay && (
           <motion.button
             whileTap={{ scale: 0.94 }}
@@ -303,22 +312,28 @@ export default function Fairness({
           </motion.button>
         )}
       </div>
-      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-3">
-        <div className="border-b border-border pb-4">
+      <motion.div
+        key={matchKey}
+        initial={reduced ? false : "hidden"}
+        animate="show"
+        variants={{ show: { transition: { staggerChildren: 0.07 } } }}
+        className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-3"
+      >
+        <motion.div variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } }} className="border-b border-border pb-4">
           <div className="flex items-end justify-between gap-2">
             <span className="flex max-w-[30%] items-center gap-1.5">
               <Flag name={teams[1].name} />
-              <span className="truncate font-display text-sm font-medium uppercase tracking-wider text-amber">
+              <span className="truncate font-display text-base font-bold uppercase tracking-wider text-amber">
                 {teams[1].name}
               </span>
             </span>
-            <span className="bignum glow font-display text-5xl font-bold">
+            <span className="bignum glow font-display text-6xl font-bold">
               <Digit value={state.score[1]} color="var(--amber)" />
               <span className="text-muted"> — </span>
               <Digit value={state.score[2]} color="var(--blue)" />
             </span>
             <span className="flex max-w-[30%] items-center justify-end gap-1.5">
-              <span className="truncate font-display text-sm font-medium uppercase tracking-wider text-blue">
+              <span className="truncate font-display text-base font-bold uppercase tracking-wider text-blue">
                 {teams[2].name}
               </span>
               <Flag name={teams[2].name} />
@@ -354,18 +369,18 @@ export default function Fairness({
               ))}
             </div>
           )}
-        </div>
+        </motion.div>
 
-        <div>
+        <motion.div variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } }}>
           <Section accent="var(--amber)" title="Discipline Mirror" />
           <div className="flex flex-col gap-2.5">
             {mirror.map(([label, av, bv]) => (
               <MirrorRow key={label} label={label} a={av} b={bv} max={max} reduced={reduced} />
             ))}
           </div>
-        </div>
+        </motion.div>
 
-        <div>
+        <motion.div variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } }}>
           <Section accent="var(--red)" title="VAR" />
           <div className="grid grid-cols-[1fr_2.5rem_2.5rem] gap-y-1 border border-border p-2 text-xs tabular-nums">
             <span />
@@ -384,9 +399,9 @@ export default function Fairness({
               Last outcome: {lastVar ? `${lastVar.detail}${lastVar.team ? ` (${teams[lastVar.team].code})` : ""}` : "—"}
             </span>
           </div>
-        </div>
+        </motion.div>
 
-        <div>
+        <motion.div variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } }}>
           <Section accent="var(--green)" title="Context · Tournament Baselines" />
           <div className="flex flex-wrap gap-1.5">
             <Chip
@@ -405,18 +420,18 @@ export default function Fairness({
               sample={baselines.varAgainstSplit}
             />
           </div>
-        </div>
+        </motion.div>
 
         <p className="label">
           Discipline split {cardsA}–{cardsB} · {ordinal(discP)} pct · {discTier} for this
           tournament
         </p>
 
-        <div>
+        <motion.div variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } }}>
           <Section accent="var(--blue)" title="Timeline" />
           <Timeline events={events} onHighlight={onHighlight} />
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </section>
   );
 }

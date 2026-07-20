@@ -108,8 +108,8 @@ const Row = memo(
       <motion.li
         ref={ref}
         layout={reduced ? false : "position"}
-        initial={reduced ? false : { opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={reduced ? false : { opacity: 0, x: -14 }}
+        animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.25 }}
         className="row-hover relative flex items-baseline gap-2 border-l-2 px-2 py-1.5 text-xs"
         style={{
@@ -128,21 +128,30 @@ const Row = memo(
             style={{ background: entry.flash }}
           />
         )}
-        <span className="w-8 shrink-0 text-right tabular-nums text-muted">
-          {e.minute !== null ? `${e.minute}'` : "—"}
+        <span
+          className="w-9 shrink-0 -skew-x-6 rounded-[2px] text-center text-[10px] font-bold leading-4 tabular-nums"
+          style={
+            entry.accent === "var(--border)"
+              ? { color: "var(--muted)" }
+              : { background: entry.accent, color: "var(--panel)" }
+          }
+        >
+          <span className="inline-block skew-x-6">
+            {e.minute !== null ? `${e.minute}'` : "—"}
+          </span>
         </span>
         {e.team ? (
           <span
-            className="min-w-4 shrink-0 border px-0.5 text-center text-[10px] leading-4"
+            className="min-w-5 shrink-0 rounded-[2px] px-0.5 text-center text-[10px] font-bold leading-4"
             style={{
-              color: e.team === 1 ? "var(--amber)" : "var(--blue)",
-              borderColor: "currentcolor",
+              background: e.team === 1 ? "var(--amber)" : "var(--blue)",
+              color: "var(--panel)",
             }}
           >
             {teams[e.team].code}
           </span>
         ) : (
-          <span className="min-w-4 shrink-0" />
+          <span className="min-w-5 shrink-0" />
         )}
         <span className="min-w-0 truncate">{entry.text}</span>
         {entry.varState === "open" && (
@@ -236,9 +245,15 @@ export default function Ledger({
 
   return (
     <section className="flex min-h-0 flex-1 flex-col bg-panel">
-      <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">
-        <span className="size-1.5 bg-green" />
-        <span className="label">Decision Ledger</span>
+      <div className="stripes flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">
+        <span className="-skew-x-6 rounded-[2px] bg-green px-2 py-0.5">
+          <span
+            className="inline-block skew-x-6 font-display text-[11px] font-bold uppercase tracking-wider"
+            style={{ color: "var(--panel)" }}
+          >
+            Decision Ledger
+          </span>
+        </span>
         <span className="label tabular-nums">{entries.length}</span>
         <span className="ml-auto flex gap-1">
           {Object.keys(FILTERS).map((f) => (
