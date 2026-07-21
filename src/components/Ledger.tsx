@@ -45,7 +45,7 @@ function textFor(e: RefEvent): string {
     case "amend":
       return e.detail === "CORRECTION" ? "CORRECTION" : e.detail.replace(" REMOVED", " DISALLOWED");
     case "free_kick":
-      return e.detail === "FREE KICK" ? e.detail : `FREE KICK · ${e.detail}`;
+      return "FREE KICK";
     case "phase_change":
       return e.detail;
     default:
@@ -56,6 +56,13 @@ function textFor(e: RefEvent): string {
 function buildEntries(events: RefEvent[]): Entry[] {
   const entries: Entry[] = [];
   for (const e of events) {
+    // the feed reports one kick as a typeless then a typed record; show the
+    // foul-proxy family once per team/minute rather than as near-identical rows
+    if (e.kind === "free_kick" || e.kind === "offside") {
+      const prev = entries[entries.length - 1];
+      if (prev && prev.event.kind === e.kind && prev.event.team === e.team && prev.event.minute === e.minute)
+        continue;
+    }
     if (e.kind === "var_end") {
       const outcome = e.detail.includes("OVERTURNED") ? "OVERTURNED" : "STANDS";
       const open = [...entries]

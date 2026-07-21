@@ -22,20 +22,28 @@ export default function Moments({
   teams,
   reduced,
   active,
+  onMoment,
 }: {
   events: RefEvent[];
   teams: TeamMeta;
   reduced: boolean;
   active: boolean;
+  onMoment?: (m: Moment) => void;
 }) {
   const seen = useRef(0);
+  const primed = useRef(false);
   const [moments, setMoments] = useState<Moment[]>([]);
 
   useEffect(() => {
     const fresh = events.slice(seen.current);
     seen.current = events.length;
-    // banners only fire during replay — never on a normal instant match load
+    // banners fire live and during replay, never on a normal instant load; the
+    // first pass only primes the cursor so a mid-match open doesn't back-fire
     if (reduced || !active) return;
+    if (!primed.current) {
+      primed.current = true;
+      return;
+    }
     const add: Moment[] = [];
     for (const e of fresh) {
       if (e.kind === "goal") add.push({ key: e.id, type: "goal", team: e.team });
@@ -47,12 +55,13 @@ export default function Moments({
     if (!add.length) return;
     setMoments((m) => [...m, ...add]);
     for (const a of add) {
+      onMoment?.(a);
       setTimeout(
         () => setMoments((m) => m.filter((x) => x.key !== a.key)),
         a.type === "goal" ? 2600 : 2900,
       );
     }
-  }, [events, reduced]);
+  }, [events, reduced, active, onMoment]);
 
   return (
     <>
@@ -89,6 +98,20 @@ export default function Moments({
               transition={{ duration: 1.6, times: [0, 0.3, 1] }}
               style={{
                 boxShadow: "inset 0 0 70px color-mix(in srgb, var(--amber) 35%, transparent)",
+              }}
+            />
+          ))}
+        {moments
+          .filter((m) => m.type === "goal")
+          .map((m) => (
+            <motion.div
+              key={`goal-glow-${m.key}`}
+              className="pointer-events-none fixed inset-0 z-30"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0, 1, 0] }}
+              transition={{ duration: 1.1, times: [0, 0.22, 1] }}
+              style={{
+                boxShadow: "inset 0 0 90px color-mix(in srgb, var(--green) 28%, transparent)",
               }}
             />
           ))}

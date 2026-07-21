@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useAnimationControls, useReducedMotion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import TopBar from "@/components/TopBar";
 import Ledger from "@/components/Ledger";
@@ -53,6 +53,16 @@ export default function Dashboard({ network }: { network: string }) {
   // demo mode (press K three times): simulated Market Pulse for explainer videos
   const [demoMode, setDemoMode] = useState(false);
   const kTaps = useRef({ count: 0, at: 0 });
+
+  // big-moment feedback: a brief background shake when a goal/red/overturn fires
+  const shake = useAnimationControls();
+  const onMoment = useCallback(() => {
+    shake.start({
+      x: [0, -5, 5, -4, 4, -2, 0],
+      scale: [1, 1.006, 1, 1.004, 1],
+      transition: { duration: 0.5, ease: "easeOut", delay: 0.16 },
+    });
+  }, [shake]);
 
   const displayEvents = useMemo(
     () => (replayCutoff === null ? events : events.filter((e) => e.ts <= replayCutoff)),
@@ -246,7 +256,10 @@ export default function Dashboard({ network }: { network: string }) {
         reduced={reduced}
       />
 
-      <main className="grid min-h-0 flex-1 overflow-hidden lg:grid-cols-[2fr_3fr]">
+      <motion.main
+        animate={shake}
+        className="grid min-h-0 flex-1 overflow-hidden lg:grid-cols-[2fr_3fr]"
+      >
         <div
           className={`${tab === "ledger" ? "flex" : "hidden"} min-h-0 min-w-0 flex-col lg:flex lg:border-r lg:border-border`}
         >
@@ -286,7 +299,7 @@ export default function Dashboard({ network }: { network: string }) {
             }
           />
         </div>
-      </main>
+      </motion.main>
 
       <footer className="label shrink-0 truncate border-t border-border px-3 py-1.5">
         stream: {streamLabel} · last event: {lastEvent} · network: {network}
@@ -321,7 +334,8 @@ export default function Dashboard({ network }: { network: string }) {
         events={displayEvents}
         teams={teams}
         reduced={reduced}
-        active={replayCutoff !== null}
+        active={replayCutoff !== null || cfg.source === "live"}
+        onMoment={onMoment}
       />
       <MatchBrowser
         open={browser}

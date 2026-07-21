@@ -238,7 +238,7 @@ function HeroIllustration() {
     ["71'", "ARG", "RED CARD", "var(--red)"],
     ["58'", "ARG", "VAR · OVERTURNED", "var(--amber)"],
     ["24'", "ARG", "GOAL", "var(--green)"],
-    ["11'", "EGY", "FREE KICK · DANGER", "var(--border)"],
+    ["11'", "EGY", "FREE KICK", "var(--border)"],
   ];
   return (
     <div className="overflow-hidden rounded-[4px] border border-border bg-panel">

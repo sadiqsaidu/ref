@@ -32,11 +32,13 @@ export function historySource(fixtureId: string, speed: number): MatchSource {
         .catch((e) => {
           onStatus?.(false);
           console.error(`history ${fixtureId}:`, e instanceof Error ? e.message : e);
-          onError?.(
+          const message =
             e instanceof TxlineApiError && (e.status === 401 || e.status === 403)
               ? `match record access denied (${e.status}) · renew or reactivate TXLINE_API_TOKEN, then restart the server`
-              : `match record unavailable${e instanceof Error ? ` · ${e.message}` : ""}`,
-          );
+              : e instanceof Error && e.message === "no score records in response"
+                ? "TxLINE has no detailed record for this fixture · pick another match from the strip"
+                : `match record unavailable${e instanceof Error ? ` · ${e.message}` : ""}`;
+          onError?.(message);
         });
     },
     close() {
