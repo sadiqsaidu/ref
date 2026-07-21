@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
-import type { Competition, TeamMeta } from "@/components/Dashboard";
+import type { TeamMeta } from "@/components/Dashboard";
 import ThemeToggle from "./ThemeToggle";
 
 export default function TopBar({
@@ -12,9 +12,6 @@ export default function TopBar({
   sourceLabel,
   score,
   teams,
-  competitions,
-  competitionId,
-  onCompetition,
   onMatches,
   onControls,
 }: {
@@ -24,9 +21,6 @@ export default function TopBar({
   sourceLabel: string;
   score: { 1: number; 2: number } | null;
   teams: TeamMeta;
-  competitions: Competition[];
-  competitionId: number | null;
-  onCompetition: (id: number) => void;
   onMatches: () => void;
   onControls: () => void;
 }) {
@@ -39,25 +33,9 @@ export default function TopBar({
       >
         REF
       </Link>
-      {competitions.length > 0 && (
-        <label className="relative shrink-0">
-          <select
-            value={competitionId ?? ""}
-            onChange={(e) => onCompetition(Number(e.target.value))}
-            className="label max-w-[9rem] cursor-pointer truncate rounded-[4px] border border-border bg-panel py-1 pl-2 pr-5 hover:border-green hover:!text-green"
-            aria-label="Competition"
-          >
-            {competitions.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name} ({c.count})
-              </option>
-            ))}
-          </select>
-          <span className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-[8px] text-muted">
-            ▼
-          </span>
-        </label>
-      )}
+      <span className="label hidden shrink-0 rounded-[4px] border border-border px-2 py-0.5 sm:inline">
+        World Cup
+      </span>
       {score && (
         <motion.span
           initial={reduced ? false : { opacity: 0, y: -6 }}

@@ -11,6 +11,7 @@ import MatchStrip from "@/components/MatchStrip";
 import Moments from "@/components/Moments";
 import { useMatchStream, type StreamConfig } from "@/hooks/useMatchStream";
 import { reduce } from "@/lib/reduce";
+import { simulateOdds } from "@/lib/simulateOdds";
 
 export type FixtureInfo = {
   id: string;
@@ -49,6 +50,9 @@ export default function Dashboard({ network }: { network: string }) {
   const [replayCutoff, setReplayCutoff] = useState<number | null>(null);
   const [replayNonce, setReplayNonce] = useState(0);
   const rafRef = useRef<number | undefined>(undefined);
+  // demo mode (press K three times): simulated Market Pulse for explainer videos
+  const [demoMode, setDemoMode] = useState(false);
+  const kTaps = useRef({ count: 0, at: 0 });
 
   const displayEvents = useMemo(
     () => (replayCutoff === null ? events : events.filter((e) => e.ts <= replayCutoff)),
@@ -123,6 +127,17 @@ export default function Dashboard({ network }: { network: string }) {
       if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
       if (e.key === "d") setDrawer((d) => !d);
       if (e.key === "m") setBrowser((b) => !b);
+      if (e.key === "k" || e.key === "K") {
+        const now = Date.now();
+        kTaps.current = {
+          count: now - kTaps.current.at < 800 ? kTaps.current.count + 1 : 1,
+          at: now,
+        };
+        if (kTaps.current.count >= 3) {
+          kTaps.current.count = 0;
+          setDemoMode((v) => !v);
+        }
+      }
       if (e.key === "Escape") {
         setDrawer(false);
         setBrowser(false);
@@ -177,6 +192,16 @@ export default function Dashboard({ network }: { network: string }) {
 
   useEffect(() => () => stopReplay(), [stopReplay]);
 
+  const demoOdds = useMemo(
+    () => (demoMode && oddsSeries.length === 0 ? simulateOdds(events) : []),
+    [demoMode, oddsSeries.length, events],
+  );
+  const shownOdds = oddsSeries.length
+    ? oddsSeries
+    : replayCutoff !== null
+      ? demoOdds.filter((t) => t.ts <= replayCutoff)
+      : demoOdds;
+
   const lastEvent = state.lastTs
     ? new Date(state.lastTs).toLocaleTimeString([], { hour12: false })
     : "—";
@@ -209,9 +234,6 @@ export default function Dashboard({ network }: { network: string }) {
         sourceLabel={cfg.source.toUpperCase()}
         score={match ? state.score : null}
         teams={teams}
-        competitions={competitions}
-        competitionId={competitionId}
-        onCompetition={onCompetition}
         onMatches={() => setBrowser((b) => !b)}
         onControls={() => setDrawer((d) => !d)}
       />
@@ -224,14 +246,14 @@ export default function Dashboard({ network }: { network: string }) {
         reduced={reduced}
       />
 
-      <main className="grid min-h-0 flex-1 lg:grid-cols-[2fr_3fr]">
+      <main className="grid min-h-0 flex-1 overflow-hidden lg:grid-cols-[2fr_3fr]">
         <div
-          className={`${tab === "ledger" ? "flex" : "hidden"} min-h-0 flex-col lg:flex lg:border-r lg:border-border`}
+          className={`${tab === "ledger" ? "flex" : "hidden"} min-h-0 min-w-0 flex-col lg:flex lg:border-r lg:border-border`}
         >
           <Ledger events={displayEvents} highlightId={highlightId} teams={teams} empty={empty} />
         </div>
         <div
-          className={`${tab === "fairness" ? "flex" : "hidden"} min-h-0 flex-col lg:flex`}
+          className={`${tab === "fairness" ? "flex" : "hidden"} min-h-0 min-w-0 flex-col lg:flex`}
         >
           <Fairness
             state={state}
@@ -242,7 +264,8 @@ export default function Dashboard({ network }: { network: string }) {
             highlightId={highlightId}
             kickoff={match?.startTime}
             matchKey={`${cfg.source}:${cfg.fixture ?? ""}`}
-            oddsSeries={oddsSeries}
+            oddsSeries={shownOdds}
+            oddsSimulated={oddsSeries.length === 0 && demoMode}
             replayActive={replayCutoff !== null}
             replayFrac={
               replayCutoff !== null && events.length > 1
@@ -267,6 +290,7 @@ export default function Dashboard({ network }: { network: string }) {
 
       <footer className="label shrink-0 truncate border-t border-border px-3 py-1.5">
         stream: {streamLabel} · last event: {lastEvent} · network: {network}
+        {demoMode && <span className="!text-amber"> · demo mode</span>}
       </footer>
 
       <nav className="grid shrink-0 grid-cols-3 border-t border-border lg:hidden">

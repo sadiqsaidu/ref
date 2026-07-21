@@ -2,16 +2,14 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import Flag from "@/components/Flag";
 import ThemeToggle from "@/components/ThemeToggle";
-import type { MatchSummary } from "@/lib/matchSummary";
 
 const fade = {
   hidden: { opacity: 0, y: 18 },
   show: { opacity: 1, y: 0, transition: { duration: 0.45 } },
 };
 
-export default function Landing({ summary }: { summary: MatchSummary | null }) {
+export default function Landing() {
   return (
     <div className="min-h-dvh">
       <header className="stripes flex h-12 items-center gap-3 border-b border-border px-4">
@@ -50,12 +48,12 @@ export default function Landing({ summary }: { summary: MatchSummary | null }) {
               <span className="wordmark">on the record.</span>
             </motion.h1>
             <motion.p variants={fade} className="max-w-md text-sm leading-relaxed text-muted">
-              REF is a referee-transparency dashboard. It shows an immutable ledger
-              of every officiating decision — cards, penalties, VAR reviews,
-              disallowed goals — from a cryptographically signed data feed, next to
-              a fairness view that measures each match against tournament baselines.
-              Descriptive, not accusatory: percentiles, &ldquo;within normal
-              range&rdquo;, &ldquo;unusual&rdquo;.
+              REF is a referee-transparency dashboard for the World Cup. It shows an
+              immutable ledger of every officiating decision — cards, penalties, VAR
+              reviews, disallowed goals — from a cryptographically signed data feed,
+              next to a fairness view, a market-impact read, and an AI analyst that
+              explains it all in plain language. Descriptive, not accusatory:
+              percentiles, &ldquo;within normal range&rdquo;, &ldquo;unusual&rdquo;.
             </motion.p>
             <motion.div variants={fade} className="flex flex-wrap gap-3">
               <Link
@@ -75,7 +73,7 @@ export default function Landing({ summary }: { summary: MatchSummary | null }) {
           </div>
 
           <motion.div variants={fade}>
-            <HeroIllustration data={summary} />
+            <HeroIllustration />
           </motion.div>
         </motion.section>
 
@@ -136,25 +134,31 @@ const FEATURES = [
     accent: "var(--green)",
     glyph: "▤",
     title: "Decision Ledger",
-    body: "A newest-first, immutable log of every call. Minute stamp, team, plain-language line, and a verification mark linking to the on-chain proof.",
+    body: "A newest-first, immutable log of every call. Minute stamp, team, plain line, and a verification mark linking to the on-chain proof.",
   },
   {
     accent: "var(--amber)",
     glyph: "◫",
     title: "Fairness",
-    body: "Both teams' discipline mirrored side by side — cards, foul proxy, corners, VAR — each shown as a percentile against tournament baselines.",
+    body: "Both teams' discipline mirrored — cards, foul proxy, corners, VAR — each placed against every other World Cup match in plain language.",
   },
   {
     accent: "var(--blue)",
     glyph: "◭",
     title: "Market Pulse",
-    body: "Consensus win-probability over match time. Quantifies what each decision cost using the betting market as a neutral observer — zero betting.",
+    body: "Consensus win-probability over match time. Shows what each decision cost, using the betting market as a neutral observer. Zero betting.",
+  },
+  {
+    accent: "var(--red)",
+    glyph: "✦",
+    title: "AI Analyst",
+    body: "An AI that knows the Laws of the Game explains each match in plain words — then answers your own follow-up questions in a chat.",
   },
 ];
 
 function FeatureCards() {
   return (
-    <section className="grid gap-4 md:grid-cols-3">
+    <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {FEATURES.map((f, i) => (
         <motion.div
           key={f.title}
@@ -168,10 +172,7 @@ function FeatureCards() {
         >
           <div
             className="stripes flex items-center gap-2 border-b px-3 py-2"
-            style={{
-              borderColor: f.accent,
-              background: `color-mix(in srgb, ${f.accent} 12%, transparent)`,
-            }}
+            style={{ borderColor: f.accent, background: `color-mix(in srgb, ${f.accent} 12%, transparent)` }}
           >
             <span className="font-display text-lg font-bold" style={{ color: f.accent }}>
               {f.glyph}
@@ -191,10 +192,10 @@ function FeatureCards() {
 }
 
 const STEPS: [string, string, string, string][] = [
-  ["01", "var(--green)", "Pick a match", "Open the dashboard — it starts on the most recent match. Switch competition in the top bar, or press M to browse the whole season by flag."],
-  ["02", "var(--yellow)", "Read the ledger", "Scan every decision in order. Filter to CARDS, VAR, or GOALS. Green ✓ marks are anchored to on-chain proofs you can open."],
-  ["03", "var(--amber)", "Check fairness & scorers", "See the discipline mirror, percentile chips, and who scored or got booked. On live matches, Market Pulse shows what each call cost."],
-  ["04", "var(--blue)", "Replay it", "Hit ▶ REPLAY MATCH to watch the whole thing unfold as a highlight reel: rolling score, growing bars, and big-moment banners."],
+  ["01", "var(--green)", "Pick a match", "Open the dashboard — it starts on the most recent match. Press M to browse the whole World Cup by flag."],
+  ["02", "var(--yellow)", "Read the ledger", "Scan every decision in order. Filter to CARDS, VAR, or GOALS. Green ✓ marks are anchored to on-chain proofs."],
+  ["03", "var(--amber)", "Ask the AI analyst", "See the discipline mirror, scorers, and market impact — then ask the AI analyst to explain any decision in plain language."],
+  ["04", "var(--blue)", "Replay it", "Hit ▶ REPLAY MATCH to watch it unfold as a highlight reel: rolling score, growing bars, and big-moment banners."],
 ];
 
 function HowToUse() {
@@ -230,66 +231,41 @@ function HowToUse() {
   );
 }
 
-const EVENT_ACCENT: Record<string, string> = {
-  goal: "var(--green)",
-  red: "var(--red)",
-  second_yellow: "var(--red)",
-  var_end: "var(--amber)",
-};
-
-function eventText(kind: string, detail: string): string {
-  if (kind === "goal") return detail === "PENALTY" ? "GOAL · PENALTY" : "GOAL";
-  if (kind === "red") return "RED CARD";
-  if (kind === "second_yellow") return "SECOND YELLOW";
-  if (kind === "var_end") return `VAR · ${detail.replace(/.*· /, "")}`;
-  return detail;
-}
-
-function HeroIllustration({ data }: { data: MatchSummary | null }) {
-  const failed = data === null;
-  const t1 = data?.teams[1] ?? "Team A";
-  const t2 = data?.teams[2] ?? "Team B";
-  const c1 = t1.slice(0, 3).toUpperCase();
-  const c2 = t2.slice(0, 3).toUpperCase();
-  const rows = data?.keyEvents ?? [];
-
+// original static illustration — decorative product mock, not live data
+function HeroIllustration() {
+  const rows: [string, string, string, string][] = [
+    ["71'", "ARG", "RED CARD", "var(--red)"],
+    ["58'", "ARG", "VAR · OVERTURNED", "var(--amber)"],
+    ["24'", "ARG", "GOAL", "var(--green)"],
+    ["11'", "EGY", "FREE KICK · DANGER", "var(--border)"],
+  ];
   return (
     <div className="overflow-hidden rounded-[4px] border border-border bg-panel">
       <div className="stripes flex items-center gap-2 border-b border-border px-3 py-2">
         <span className="flex items-center overflow-hidden rounded-[4px] border border-border font-display text-xs font-bold">
-          <span className="flex items-center gap-1 bg-amber px-1.5 py-0.5" style={{ color: "var(--panel)" }}>
-            {c1}
+          <span className="bg-amber px-1.5 py-0.5" style={{ color: "var(--panel)" }}>
+            ARG
           </span>
-          <span className="px-2 tabular-nums">
-            {data ? `${data.score[1]} : ${data.score[2]}` : "· : ·"}
-          </span>
+          <span className="px-2 tabular-nums">2 : 1</span>
           <span className="bg-blue px-1.5 py-0.5" style={{ color: "var(--panel)" }}>
-            {c2}
+            EGY
           </span>
         </span>
-        <span className="label truncate">
-          {failed ? "example" : `${t1} v ${t2}`}
+        <span className="label">F · 90&apos;</span>
+        <span className="ml-auto flex items-center gap-1.5">
+          <span className="live-dot size-1.5 rounded-full bg-green" />
+          <span className="label">LIVE</span>
         </span>
-        <span className="label ml-auto">{data?.phase ?? "F"}</span>
       </div>
-      <div className="flex items-center gap-2 border-b border-border px-3 py-2">
-        <Flag name={t1} />
-        <span className="min-w-0 flex-1 truncate font-display text-xs font-bold uppercase tracking-wide">
-          {t1} <span className="text-muted">v</span> {t2}
-        </span>
-        <Flag name={t2} />
-      </div>
-      {rows.length > 0 ? (
-        rows.map((e, i) => {
-          const accent = EVENT_ACCENT[e.kind] ?? "var(--border)";
-          const code = e.team === 1 ? c1 : e.team === 2 ? c2 : "";
-          return (
+      <div className="grid grid-cols-2">
+        <div className="border-r border-border">
+          {rows.map(([min, code, text, accent], i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, x: -12 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 + i * 0.12, duration: 0.3 }}
-              className="flex items-center gap-2 border-b border-border px-3 py-2 text-[11px]"
+              transition={{ delay: 0.3 + i * 0.12, duration: 0.3 }}
+              className="flex items-center gap-2 border-b border-border px-2.5 py-2 text-[11px]"
               style={{ borderLeft: `2px solid ${accent}` }}
             >
               <span
@@ -299,18 +275,48 @@ function HeroIllustration({ data }: { data: MatchSummary | null }) {
                   color: accent === "var(--border)" ? "var(--muted)" : "var(--panel)",
                 }}
               >
-                <span className="inline-block skew-x-6 tabular-nums">
-                  {e.minute !== null ? `${e.minute}'` : "—"}
-                </span>
+                <span className="inline-block skew-x-6 tabular-nums">{min}</span>
               </span>
-              {code && <span className="text-muted">{code}</span>}
-              <span className="truncate">{eventText(e.kind, e.detail)}</span>
+              <span className="text-muted">{code}</span>
+              <span className="truncate">{text}</span>
             </motion.div>
-          );
-        })
-      ) : (
-        failed && <div className="label p-4">example unavailable</div>
-      )}
+          ))}
+        </div>
+        <div className="flex flex-col justify-center p-3">
+          <div className="label mb-1 flex items-center gap-1.5">
+            <span className="size-1.5 bg-green" />
+            Market Pulse
+          </div>
+          <svg viewBox="0 0 120 60" className="w-full">
+            {[15, 30, 45].map((yy) => (
+              <line key={yy} x1="0" y1={yy} x2="120" y2={yy} stroke="var(--border)" strokeDasharray="2 3" />
+            ))}
+            <line x1="70" y1="0" x2="70" y2="60" stroke="var(--red)" strokeOpacity="0.5" />
+            <motion.path
+              d="M0 34 L20 32 L40 33 L55 24 L70 26 L72 40 L95 44 L120 46"
+              fill="none"
+              stroke="var(--amber)"
+              strokeWidth="2"
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: 1.4, delay: 0.5 }}
+            />
+            <motion.path
+              d="M0 30 L20 32 L40 31 L55 40 L70 38 L72 22 L95 18 L120 15"
+              fill="none"
+              stroke="var(--blue)"
+              strokeWidth="2"
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: 1.4, delay: 0.5 }}
+            />
+          </svg>
+          <div className="mt-1 flex justify-between">
+            <span className="label !text-red">RED · −14 PTS</span>
+            <span className="label">ARG</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

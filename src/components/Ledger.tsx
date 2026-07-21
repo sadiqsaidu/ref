@@ -244,7 +244,7 @@ export default function Ledger({
   };
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col bg-panel">
+    <section className="flex min-h-0 min-w-0 flex-1 flex-col bg-panel">
       <div className="stripes flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">
         <span className="-skew-x-6 rounded-[2px] bg-green px-2 py-0.5">
           <span

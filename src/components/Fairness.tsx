@@ -3,6 +3,7 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { memo, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { TeamMeta } from "@/components/Dashboard";
+import AiAnalyst, { type AnalystContext } from "@/components/AiAnalyst";
 import Flag from "@/components/Flag";
 import MarketPulse from "@/components/MarketPulse";
 import type { OddsTick } from "@/lib/odds";
@@ -278,6 +279,7 @@ export default function Fairness({
   kickoff,
   matchKey,
   oddsSeries,
+  oddsSimulated,
   replayActive,
   replayFrac,
   replay,
@@ -291,6 +293,7 @@ export default function Fairness({
   kickoff?: number;
   matchKey?: string;
   oddsSeries: OddsTick[];
+  oddsSimulated?: boolean;
   replayActive?: boolean;
   replayFrac?: number;
   replay?: { active: boolean; onToggle: () => void };
@@ -310,15 +313,49 @@ export default function Fairness({
   const max = Math.max(1, ...mirror.flatMap(([, x, y]) => [x, y]));
 
   const lastVar = [...events].reverse().find((e) => e.kind === "var_end");
-  const anchored = events.filter((e) => e.verify.status === "anchored");
-  const anchoredRef = anchored.find((e) => e.verify.ref)?.verify.ref;
   const cardsA = a.yellows + a.reds;
   const cardsB = b.yellows + b.reds;
   const discP = percentile(baselines.disciplineSplit, Math.abs(cardsA - cardsB));
   const discTier = tierFor(discP);
 
+  const analystContext: AnalystContext = useMemo(
+    () => ({
+      teams: { 1: teams[1].name, 2: teams[2].name },
+      score: state.score,
+      phase: state.phase,
+      minute: state.minute,
+      discipline: {
+        yellows: [a.yellows, b.yellows],
+        reds: [a.reds, b.reds],
+        foulsProxy: [a.foulsProxy, b.foulsProxy],
+        corners: [a.corners, b.corners],
+        dangerousFreeKicks: [a.dangerFKs, b.dangerFKs],
+      },
+      var: {
+        for: [a.varFor, b.varFor],
+        against: [a.varAgainst, b.varAgainst],
+        overturned: [a.varOverturned, b.varOverturned],
+      },
+      scorers: [1, 2].map((t) => ({
+        team: teams[t as 1 | 2].name,
+        players: players[t as 1 | 2]
+          .filter((p) => p.goals > 0)
+          .map((p) => `${p.name} (${p.goals})`),
+      })),
+      decisions: events
+        .filter((e) => e.kind !== "phase_change")
+        .slice(-40)
+        .map((e) => ({
+          minute: e.minute,
+          team: e.team ? teams[e.team].name : null,
+          text: `${e.kind}: ${e.detail}`,
+        })),
+    }),
+    [teams, state, a, b, players, events],
+  );
+
   return (
-    <section className="flex min-h-0 flex-1 flex-col bg-panel">
+    <section className="flex min-h-0 min-w-0 flex-1 flex-col bg-panel">
       <div className="stripes flex shrink-0 items-center justify-between border-b border-border px-3 py-2">
         <span className="-skew-x-6 rounded-[2px] bg-amber px-2 py-0.5">
           <span
@@ -367,7 +404,7 @@ export default function Fairness({
         initial={reduced ? false : "hidden"}
         animate="show"
         variants={{ show: { transition: { staggerChildren: 0.07 } } }}
-        className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-3"
+        className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-3"
       >
         <motion.div variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } }} className="border-b border-border pb-4">
           <div className="flex items-end justify-between gap-2">
@@ -419,21 +456,13 @@ export default function Fairness({
               ))}
             </div>
           )}
-          {anchored.length > 0 && (
-            <a
-              href={anchoredRef}
-              target="_blank"
-              rel="noreferrer"
-              className="row-hover mt-2 flex items-center justify-center gap-1.5 rounded-[4px] border border-green py-1"
-            >
-              <span className="text-green">✓</span>
-              <span className="label !text-green">
-                {anchored.length} decisions anchored on Solana
-              </span>
-              <span className="label">↗</span>
-            </a>
-          )}
         </motion.div>
+
+        {events.length > 0 && (
+          <motion.div variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } }}>
+            <AiAnalyst context={analystContext} matchKey={matchKey ?? ""} />
+          </motion.div>
+        )}
 
         {oddsSeries.length > 0 && (
           <motion.div variants={{ hidden: { opacity: 0, y: 14 }, show: { opacity: 1, y: 0, transition: { duration: 0.3 } } }}>
@@ -441,6 +470,7 @@ export default function Fairness({
               oddsSeries={oddsSeries}
               events={events}
               teams={teams}
+              simulated={oddsSimulated ?? false}
               onHighlight={onHighlight}
             />
           </motion.div>

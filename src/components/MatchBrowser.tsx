@@ -69,7 +69,7 @@ export default function MatchBrowser({
                 ESC
               </button>
             </div>
-            {competitions.length > 0 && (
+            {competitions.length > 1 && (
               <div className="flex shrink-0 gap-1.5 overflow-x-auto border-b border-border px-3 py-2">
                 {competitions.map((c) => (
                   <motion.button
@@ -125,8 +125,7 @@ export default function MatchBrowser({
                         </span>
                         <Flag name={m.p1} />
                         <span className="min-w-0 flex-1 truncate">
-                          {m.p1} <span className="text-muted">v</span> {m.p2}{" "}
-                          <span className="text-[9px] text-muted">#{m.id}</span>
+                          {m.p1} <span className="text-muted">v</span> {m.p2}
                         </span>
                         <Flag name={m.p2} />
                       </motion.button>

@@ -25,11 +25,13 @@ export default function MarketPulse({
   oddsSeries,
   events,
   teams,
+  simulated,
   onHighlight,
 }: {
   oddsSeries: OddsTick[];
   events: RefEvent[];
   teams: TeamMeta;
+  simulated: boolean;
   onHighlight: (id: string | null) => void;
 }) {
   const reduced = useReducedMotion() ?? false;
@@ -66,7 +68,7 @@ export default function MarketPulse({
   if (oddsSeries.length === 0) {
     return (
       <div>
-        <Header teams={teams} />
+        <Header teams={teams} simulated={simulated} />
         <p className="label mt-2">Awaiting odds ticks…</p>
       </div>
     );
@@ -74,7 +76,7 @@ export default function MarketPulse({
 
   return (
     <div>
-      <Header teams={teams} />
+      <Header teams={teams} simulated={simulated} />
 
       <div ref={setWrap} className="mt-2">
         {w > 0 && (
@@ -185,7 +187,7 @@ export default function MarketPulse({
   );
 }
 
-function Header({ teams }: { teams: TeamMeta }) {
+function Header({ teams, simulated }: { teams: TeamMeta; simulated: boolean }) {
   return (
     <div className="flex items-center justify-between">
       <div className="label flex items-center gap-1.5">
@@ -197,9 +199,12 @@ function Header({ teams }: { teams: TeamMeta }) {
       </div>
       <span
         className="label rounded-[3px] border px-1.5 py-0.5"
-        style={{ borderColor: "var(--green)", color: "var(--green)" }}
+        style={{
+          borderColor: simulated ? "var(--amber)" : "var(--green)",
+          color: simulated ? "var(--amber)" : "var(--green)",
+        }}
       >
-        LIVE ODDS
+        {simulated ? "SIMULATED" : "LIVE ODDS"}
       </span>
     </div>
   );

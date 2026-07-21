@@ -59,6 +59,38 @@ finished matches.
   "N decisions anchored on Solana" chip linking to the explorer — the feed's
   signed data used as an oracle-free source of truth.
 
+## AI Match Analyst
+
+The FAIRNESS panel includes an **AI Analyst**: an assistant that knows the
+IFAB Laws of the Game and explains each match — the decisions, VAR calls, and
+whether anything was unusual — in plain language, then answers your follow-up
+questions in a chat. It is grounded only in that match's data and uses the
+same neutral vocabulary as the rest of the app (never "bias"/"rigged").
+
+**Setup** (the key stays server-side; the browser never sees it):
+
+1. Get an OpenAI API key from <https://platform.openai.com/api-keys>.
+2. Add it to `.env.local`:
+
+   ```bash
+   OPENAI_API_KEY=sk-...
+   # optional, defaults to the cheap, capable gpt-4o-mini:
+   OPENAI_MODEL=gpt-4o-mini
+   ```
+3. Restart the server. Without a key the analyst shows a clear
+   "not configured" message and the rest of the app works normally.
+
+The model is **`gpt-4o-mini`** by default — very low cost and more than good
+enough for match summaries and Q&A.
+
+## Demo mode (for explainer videos)
+
+Since the World Cup is finished there are no live matches, so real Market
+Pulse (live odds) can't display. Press **`K` three times** to toggle **demo
+mode**: it turns on a clearly-badged **SIMULATED** Market Pulse (derived from
+the open match's real decisions) so you can show the feature on camera. It is
+off by default and never shown in normal use.
+
 ## Replay & motion
 
 Every completed match can be **replayed client-side** (▶ REPLAY MATCH): the
