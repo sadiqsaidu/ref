@@ -48,11 +48,11 @@ export default function Landing() {
               <span className="wordmark">on the record.</span>
             </motion.h1>
             <motion.p variants={fade} className="max-w-md text-sm leading-relaxed text-muted">
-              REF is a referee-transparency dashboard for the World Cup. It shows an
-              immutable ledger of every officiating decision — cards, penalties, VAR
-              reviews, disallowed goals — from a cryptographically signed data feed,
-              next to a fairness view, a market-impact read, and an AI analyst that
-              explains it all in plain language. Descriptive, not accusatory:
+              REF is a referee transparency dashboard for the World Cup. It keeps an
+              immutable ledger of every officiating decision (cards, VAR reviews,
+              penalties, disallowed goals) from a cryptographically signed data feed.
+              Next to it you get fairness stats, a market impact read, and plain
+              language AI analysis. The tone stays neutral and descriptive:
               percentiles, &ldquo;within normal range&rdquo;, &ldquo;unusual&rdquo;.
             </motion.p>
             <motion.div variants={fade} className="flex flex-wrap gap-3">
@@ -94,11 +94,12 @@ export default function Landing() {
               </span>
             </div>
             <p className="max-w-3xl p-4 text-sm leading-relaxed text-muted">
-              A crowd that reprices a match <em>after</em> a red card — not before —
-              is evidence the call was not known in advance. REF reads consensus
-              odds as an anti-conspiracy instrument: if the market only reacts once
-              a decision is public, that is consistent with fair play. The app never
-              places, brokers, or displays bets. Odds are used purely as a neutral,
+              When betting markets move <em>after</em> a major decision, like a red
+              card or a VAR check, rather than <em>before</em> it, that is evidence
+              the call was not leaked or predicted in advance. REF reads consensus
+              odds as a neutral anti-conspiracy tool: if the market only reacts once a
+              decision is public, that is consistent with fair play. The app never
+              places, brokers, or displays bets. Odds are used purely as an
               independent measure of impact.
             </p>
           </div>
@@ -134,25 +135,25 @@ const FEATURES = [
     accent: "var(--green)",
     glyph: "▤",
     title: "Decision Ledger",
-    body: "A newest-first, immutable log of every call. Minute stamp, team, plain line, and a verification mark linking to the on-chain proof.",
+    body: "A simple, real-time log of every referee call. Minute stamps, the teams involved, a clear explanation, and a link to the on-chain proof.",
   },
   {
     accent: "var(--amber)",
     glyph: "◫",
-    title: "Fairness",
-    body: "Both teams' discipline mirrored — cards, foul proxy, corners, VAR — each placed against every other World Cup match in plain language.",
+    title: "Fairness View",
+    body: "Compares both teams' disciplinary actions, cards, fouls and VAR checks, against historical World Cup benchmarks in plain language.",
   },
   {
     accent: "var(--blue)",
     glyph: "◭",
     title: "Market Pulse",
-    body: "Consensus win-probability over match time. Shows what each decision cost, using the betting market as a neutral observer. Zero betting.",
+    body: "Shows win probability changes over the match, with no sports betting. It uses consensus odds as a neutral measure of whether a call was expected.",
   },
   {
     accent: "var(--red)",
     glyph: "✦",
     title: "AI Analyst",
-    body: "An AI that knows the Laws of the Game explains each match in plain words — then answers your own follow-up questions in a chat.",
+    body: "An AI assistant trained on the Laws of the Game that breaks down the match calls and answers your questions in a live chat.",
   },
 ];
 
@@ -192,9 +193,9 @@ function FeatureCards() {
 }
 
 const STEPS: [string, string, string, string][] = [
-  ["01", "var(--green)", "Pick a match", "Open the dashboard — it starts on the most recent match. Press M to browse the whole World Cup by flag."],
+  ["01", "var(--green)", "Pick a match", "Open the dashboard. It starts on the most recent match. Press M to browse the whole World Cup by flag."],
   ["02", "var(--yellow)", "Read the ledger", "Scan every decision in order. Filter to CARDS, VAR, or GOALS. Green ✓ marks are anchored to on-chain proofs."],
-  ["03", "var(--amber)", "Ask the AI analyst", "See the discipline mirror, scorers, and market impact — then ask the AI analyst to explain any decision in plain language."],
+  ["03", "var(--amber)", "Ask the AI analyst", "See the discipline mirror, scorers, and market impact, then ask the AI analyst to explain any decision in plain language."],
   ["04", "var(--blue)", "Replay it", "Hit ▶ REPLAY MATCH to watch it unfold as a highlight reel: rolling score, growing bars, and big-moment banners."],
 ];
 
@@ -231,7 +232,7 @@ function HowToUse() {
   );
 }
 
-// original static illustration — decorative product mock, not live data
+// original static illustration: decorative product mock, not live data
 function HeroIllustration() {
   const rows: [string, string, string, string][] = [
     ["71'", "ARG", "RED CARD", "var(--red)"],
