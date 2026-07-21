@@ -28,12 +28,21 @@ export function liveSource(fixtureId: string): MatchSource {
             for await (const msg of parseSse(res.body!)) {
               if (msg.id) lastEventId = msg.id;
               if (!msg.data || msg.event?.toLowerCase() === "heartbeat") continue;
-              const raw = JSON.parse(msg.data) as RawScore;
-              for (const e of map(raw)) {
-                const key = eventKey(e);
-                if (seen.has(key)) continue;
-                seen.add(key);
-                cb(e);
+              let raw: RawScore;
+              try {
+                raw = JSON.parse(msg.data) as RawScore;
+              } catch {
+                continue;
+              }
+              try {
+                for (const e of map(raw)) {
+                  const key = eventKey(e);
+                  if (seen.has(key)) continue;
+                  seen.add(key);
+                  cb(e);
+                }
+              } catch (err) {
+                console.error("map live record:", err instanceof Error ? err.message : err);
               }
             }
           } catch (e) {

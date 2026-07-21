@@ -1,7 +1,10 @@
 import type { MatchSource, Players, RefEvent } from "../types";
 import { apiFetch, parseRecords, TxlineApiError } from "../txline/api";
-import { aggregatePlayers, normalizeRaw } from "../txline/map";
+import { aggregatePlayers, normalizeRaw, orderRecords } from "../txline/map";
 import { playRaw } from "./play";
+
+const hasContent = (r: { action?: unknown; stats?: unknown; statusId?: unknown }) =>
+  r.action !== undefined || r.stats !== undefined || r.statusId !== undefined;
 
 export function historySource(fixtureId: string, speed: number): MatchSource {
   let inner: MatchSource | null = null;
@@ -17,11 +20,10 @@ export function historySource(fixtureId: string, speed: number): MatchSource {
         .then((r) => r.text())
         .then((text) => {
           if (closed) return;
-          const records = (parseRecords(text) as Record<string, unknown>[])
-            .map(normalizeRaw)
-            .filter((r) => typeof r.seq === "number")
-            .sort((a, b) => a.seq - b.seq);
-          if (records.length === 0) throw new Error("no score records in response");
+          const records = orderRecords(
+            (parseRecords(text) as Record<string, unknown>[]).map(normalizeRaw),
+          );
+          if (!records.some(hasContent)) throw new Error("no score records in response");
           onStatus?.(true);
           onPlayers?.(aggregatePlayers(records));
           inner = playRaw(records, speed, true);

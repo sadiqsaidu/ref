@@ -80,6 +80,22 @@ export function normalizeRaw(raw: Record<string, unknown>): RawScore {
   return out as RawScore;
 }
 
+// Feed dumps are ordered by `seq`, but some fixtures expose only `id` or `ts`;
+// order by whichever the dump actually carries so a match is never dropped for
+// a missing key, keeping any keyless records in arrival order at the end.
+export function orderRecords(records: RawScore[]): RawScore[] {
+  const field = (["seq", "id", "ts"] as const).find((f) =>
+    records.some((r) => typeof r[f] === "number"),
+  );
+  if (!field) return records.slice();
+  const val = (r: RawScore) =>
+    typeof r[field] === "number" ? (r[field] as number) : Number.POSITIVE_INFINITY;
+  return records
+    .map((r, i) => ({ r, i }))
+    .sort((a, b) => val(a.r) - val(b.r) || a.i - b.i)
+    .map((x) => x.r);
+}
+
 type RawPlayer = Record<string, unknown>;
 const num = (o: RawPlayer, ...keys: string[]) => {
   for (const k of keys) {
@@ -213,7 +229,8 @@ export function createMapper(includeSecondary = false) {
     }
 
     const deltas = applyStats(raw);
-    const kind = raw.action ? ACTION_KINDS[raw.action.toLowerCase()] : undefined;
+    const kind =
+      typeof raw.action === "string" ? ACTION_KINDS[raw.action.toLowerCase()] : undefined;
     const minute = minuteAt(raw);
 
     const emitDeltas = (skip?: (d: Delta) => boolean) => {

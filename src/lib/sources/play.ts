@@ -16,7 +16,11 @@ export function playRaw(
       let i = 0;
       const emit = () => {
         if (closed || i >= messages.length) return;
-        for (const e of map(messages[i])) cb(e);
+        try {
+          for (const e of map(messages[i])) cb(e);
+        } catch (err) {
+          console.error("map record:", err instanceof Error ? err.message : err);
+        }
         i++;
         next();
       };

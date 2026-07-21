@@ -1,275 +1,153 @@
-# REF
+# REF: Referee Transparency for the World Cup
 
-Live referee-transparency dashboard for the World Cup final. REF shows an
-immutable ledger of every officiating decision (cards, penalties, VAR reviews,
-disallowed goals) streamed from TxLINE's cryptographically signed data feed,
-next to a fairness panel comparing both teams' discipline against tournament
-baselines. All copy is descriptive and neutral: percentiles,
-"within normal range", "unusual", "rare".
+**Live app:** https://ref-sage.vercel.app/
+**Demo video:** [Insert Loom Video Link Here]
 
-The landing page lives at **`/`**; the dashboard is at **`/app`**.
+Built for the **TxODDS World Cup Hackathon** (Superteam Nigeria Track & Global Track).
 
-The dashboard is split into two panels:
+---
 
-- **DECISION LEDGER** (left / LEDGER tab on mobile) — newest-first list of
-  every decision with minute stamps, team tags, severity accents, live VAR
-  review pairing, and a verification mark per entry (pending ○ / anchored ✓
-  linking to Solana explorer / failed ×).
-- **FAIRNESS** (right / FAIRNESS tab) — MARKET PULSE (see below), scoreline,
-  mirror bar charts for yellows, reds, fouls proxy, dangerous free kicks,
-  corners and VAR counts, a VAR summary box, percentile chips against
-  tournament baselines, an auto-composed verdict line, and a clickable match
-  timeline.
+## The night football stopped trusting the referee
 
-## Market Pulse
+Round of 16. Argentina versus Egypt. In the 63rd minute Egypt swept in what looked
+like a clean second goal to go 2-0 up. The stadium erupted. Then the VAR light
+came on. Four minutes later the goal was chalked off for a fractional offside no
+one in the crowd could see. Argentina went down the other end, drew a soft penalty,
+and by full time Egypt had collected two late yellow cards and a straight red.
 
-MARKET PULSE is the differentiator: consensus-odds impact analysis that
-quantifies what each refereeing decision cost, using the betting market as a
-**neutral, independent observer** — never as a place to bet. The app has zero
-betting functionality; it neither places, brokers, nor displays wagers.
+Within the hour the timeline had made up its mind. Screenshots of the offside line.
+Frame-by-frame threads. "Rigged." "Bought." "Same old story." Egyptian fans were
+certain they had been robbed; Argentine fans were certain the outrage was cope.
+Nobody had the actual data. Everybody had an opinion.
 
-It reads the real TxLINE StablePrice odds stream (`/api/odds/stream`),
-normalizes each tick to de-vigged implied win probabilities (Team A, draw,
-Team B), and plots them over match time. Vertical hairlines mark major
-decisions; for each, impact is the change in the affected team's win
-probability from 60 seconds before to 60 seconds after (e.g. `RED CARD ·
-−14.2 PTS`). The framing is deliberately anti-conspiracy: a market that
-reprices **after** a decision becomes public — not before — is evidence the
-call was not known in advance. When every significant decision's pre-window is
-flat relative to its post-move, one muted line reads *"consensus odds reprice
-after decisions, not before — consistent with fair play."* There is no
-accusatory variant; if the condition does not hold, nothing is shown.
+That is the problem REF was built to solve.
 
-MARKET PULSE is shown **only for in-progress (live) matches**, where real
-consensus odds are available — completed matches have no direct historical-odds
-endpoint, and REF never simulates odds. The section is simply hidden on
-finished matches.
+## The solution
 
-## Competitions, scorers & bookings
+**REF is a referee transparency dashboard.** It takes the raw, cryptographically
+signed match feed and turns it into something a casual fan and a seasoned analyst
+can both read: an immutable, timestamped record of every officiating decision, with
+plain-language context for how unusual (or how normal) the match actually was.
 
-- The app is scoped to the **World Cup** feed (the hackathon's 104 matches).
-  The competition selector is built dynamically from the feed, so adding other
-  leagues later is a one-line filter change in `src/lib/txline/fixtures.ts`.
-- **Scorers & Bookings** are parsed from the feed's per-player stats (latest
-  snapshot wins, so an overturned goal drops its scorer). Only real player
-  names are shown — if the feed exposes only numeric ids, the block is hidden.
-  Referee/official data is not in the feed, so it is not shown.
-- **On-chain verification** is front-and-centre: each decision is validated
-  against TxLINE's Solana-anchored proofs, and the FAIRNESS panel shows an
-  "N decisions anchored on Solana" chip linking to the explorer — the feed's
-  signed data used as an oracle-free source of truth.
+Instead of arguing over vibes, you can check the record:
 
-## AI Match Analyst
+- Was the card count actually lopsided, or does it just feel that way?
+- How does this match's VAR activity compare to every other World Cup game?
+- Did the betting market react **after** the red card, or did it move suspiciously
+  **before** it?
 
-The FAIRNESS panel includes an **AI Analyst**: an assistant that knows the
-IFAB Laws of the Game and explains each match — the decisions, VAR calls, and
-whether anything was unusual — in plain language, then answers your follow-up
-questions in a chat. It is grounded only in that match's data and uses the
-same neutral vocabulary as the rest of the app (never "bias"/"rigged").
+REF never says "bias" and never says "rigged." It says **within normal range**,
+**unusual**, or **rare**, and it shows you the numbers behind the word. The goal is
+not to accuse referees or to defend them. It is to replace conspiracy with evidence.
 
-**Setup** (the key stays server-side; the browser never sees it):
+## Core features
 
-1. Get an OpenAI API key from <https://platform.openai.com/api-keys>.
-2. Add it to `.env.local`:
+| Feature | What it does |
+| --- | --- |
+| **Decision Ledger** | A real-time, newest-first log of every call: goals, cards, penalties, VAR reviews and disallowed goals. Each row carries a minute stamp, the team involved, a plain explanation, and a verification mark linking to its on-chain proof. |
+| **Fairness View** | Both teams' discipline mirrored side by side (cards, foul proxy, corners, VAR checks) and placed against historical World Cup benchmarks. Percentile chips read *within normal range*, *unusual* or *rare* in language anyone can follow. |
+| **Market Pulse** | Consensus win-probability plotted over match time, with zero betting. It uses the odds market purely as a neutral, independent observer to measure what each decision cost and whether the crowd saw it coming. |
+| **AI Analyst** | An assistant grounded in the IFAB Laws of the Game that breaks the match down in plain words and answers your follow-up questions in a live chat. |
+| **Replay Mode** | Any completed match plays back as a ~42-second highlight reel: rolling score, growing discipline bars, a moving timeline playhead, and broadcast-style banners for the big moments. |
 
-   ```bash
-   OPENAI_API_KEY=sk-...
-   # optional, defaults to the cheap, capable gpt-4o-mini:
-   OPENAI_MODEL=gpt-4o-mini
-   ```
-3. Restart the server. Without a key the analyst shows a clear
-   "not configured" message and the rest of the app works normally.
+## Why the betting market matters (the anti-conspiracy angle)
 
-The model is **`gpt-4o-mini`** by default — very low cost and more than good
-enough for match summaries and Q&A.
+The single most compelling signal REF offers is timing. A market that reprices a
+match **after** a red card becomes public, rather than before it, is evidence the
+decision was not leaked or predicted in advance. When every major decision's
+pre-window is flat relative to its post-move, that is consistent with fair play.
 
-## Demo mode (for explainer videos)
+REF reads consensus odds strictly as an integrity instrument. The app has **zero
+betting functionality**: it never places, brokers, or displays wagers. Odds are one
+more neutral measurement, nothing else.
 
-Since the World Cup is finished there are no live matches, so real Market
-Pulse (live odds) can't display. Press **`K` three times** to toggle **demo
-mode**: it turns on a clearly-badged **SIMULATED** Market Pulse (derived from
-the open match's real decisions) so you can show the feature on camera. It is
-off by default and never shown in normal use.
+## Tech stack
 
-## Replay & motion
+- **Data feed:** [TxODDS](https://txodds.com) **TxLINE** cryptographically signed
+  score and odds streams. Live scores over SSE, historical match records, consensus
+  StablePrice odds, and per-player stat snapshots for scorers and bookings.
+- **On-chain verification:** each decision is validated against TxLINE's
+  **Solana**-anchored stat proofs (`/scores/stat-validation`). Anchored decisions
+  link straight to the program on Solana Explorer. Unavailable proofs degrade to
+  "pending", never to a false checkmark.
+- **App:** **Next.js** (App Router) with server-side streaming routes, a React
+  dashboard, and Framer Motion for the live and replay motion.
+- **AI Analyst:** an LLM grounded only in the selected match's normalized data,
+  using the same neutral vocabulary as the rest of the app.
 
-Every completed match can be **replayed client-side** (▶ REPLAY MATCH): the
-loaded decisions are revealed over ~42s with a live minute clock, a progress
-bar, rolling score digits, growing discipline bars, a moving timeline
-playhead, and broadcast-style banners for goals/reds/VAR — which fire **only**
-during replay, never on a normal load.
+All external credentials stay server-side. The browser never sees an API token; it
+only ever receives normalized events.
 
-## Prerequisites
+## Screenshots
 
-- **Node.js 20 or newer** (`node -v` to check)
-- **npm** (ships with Node)
+> Replace the placeholder images below with real captures before submission.
 
-Everything below is run from the project root.
+**Home / Landing Page**
 
-## Quick start
+![REF home and landing page](docs/screenshots/landing.png)
+
+**Main Match Dashboard**
+
+![REF main match dashboard](docs/screenshots/dashboard.png)
+
+**Decision Ledger & Fairness Panel**
+
+![REF decision ledger and fairness panel](docs/screenshots/ledger-fairness.png)
+
+**Market Pulse Chart**
+
+![REF market pulse chart](docs/screenshots/market-pulse.png)
+
+## Run it locally
+
+Requires **Node.js 20+** and npm.
 
 ```bash
 npm install
-npm run dev
+npm run dev        # http://localhost:3000  (landing)  ·  /app  (dashboard)
 ```
 
-Then open **http://localhost:3000** for the landing page, or go straight to
-**http://localhost:3000/app** — the dashboard opens on the **most recently
-played World Cup match** with its full record, plus a strip of recent-match
-cards under the top bar (tap to switch, "All ↗" expands the full browser).
-LIVE mode is available via the ⚙ controls or `?source=live`, with honest
-stream status in the footer until credentials are configured.
-
-The dev and production servers are both **pinned to port 3000**. If the port
-is taken, the command fails with `EADDRINUSE` instead of silently moving to
-another port — see troubleshooting below.
+The dashboard opens on the most recently played World Cup match with its full
+record. Press **`m`** to browse every fixture by flag, and hit **▶ Replay Match**
+in the fairness header to watch it unfold.
 
 ### Production build
 
 ```bash
 npm run build
-npm run start     # serves the built app on http://localhost:3000
+npm run start      # serves on http://localhost:3000
 ```
 
-`npm run start` requires a completed `npm run build` first; without one it
-exits with an error and nothing will be listening.
+### Environment variables (`.env.local`)
 
-## Troubleshooting: "This site can't be reached" / ERR_CONNECTION_REFUSED
+Required for live data and on-chain verification. All values stay server-side.
 
-This error means **nothing is listening on the URL you opened**. The usual
-causes, in order of likelihood:
+| Variable | Example | Purpose |
+| --- | --- | --- |
+| `TXLINE_API_ORIGIN` | `https://txline.txodds.com` | TxLINE API host |
+| `TXLINE_NETWORK` | `mainnet` or `devnet` | drives Solana explorer links and the footer label |
+| `TXLINE_API_TOKEN` | `…` | your activated TxLINE API token |
+| `TXLINE_FIXTURE_ID` | `17952170` | optional default fixture for LIVE mode |
+| `OPENAI_API_KEY` | `sk-…` | enables the AI Analyst (optional; the app runs without it) |
 
-1. **Wrong port in the browser.** Older versions of this project let the dev
-   server silently fall back to port 3001 when 3000 was busy; a browser
-   pointed at `localhost:3001` then fails on every later run. Both scripts are
-   now pinned to **3000** — always open the exact URL printed under
-   `- Local:` in the terminal.
-2. **A stale server is still holding port 3000.** The startup then fails with
-   `EADDRINUSE` (nothing starts). Find and kill it:
-   - Windows: `netstat -ano | findstr :3000` then `taskkill /PID <pid> /F`
-   - macOS/Linux: `lsof -i :3000` then `kill <pid>`
-   Note the process is named `next-server`, not `npm`.
-3. **`npm run start` without a build.** It prints an error and exits — run
-   `npm run build` first.
-4. **The terminal shows a crash.** Whatever is printed there (missing
-   packages → `npm install`; syntax error → fix it) is the real cause; the
-   browser error is just the symptom.
+A TxLINE token is activated by an on-chain Solana subscription. See
+`scripts/activate-mainnet.mts` for the one-shot activation flow. Without a token the
+app still runs and reports honest stream status in the footer.
 
-## Browsing World Cup matches
+## Repo layout
 
-Press **`m`** (or the MATCHES button in the top bar / bottom tab on mobile)
-to open the World Cup 2026 match browser. It lists every tournament fixture
-with country flags; selecting one loads the full match record from TxLINE's
-historical endpoint — complete decision ledger, discipline stats, and
-verification marks appear instantly, with a **▶ REPLAY MATCH** button in the
-fairness header that plays the match back as a ~45-second highlight reel
-(score digits roll, bars grow, big moments fire). No `TXLINE_FIXTURE_ID`
-needed — that variable is now only an optional default for LIVE mode.
-
-Flags are loaded from flagcdn.com; teams without a mapped flag fall back to a
-three-letter code chip.
-
-**Finding a fixture id** (for `record-replay.mts`, the drawer, or `?fixture=`):
-every match row in the browser shows its id as `#12345678`, and
-`curl -s localhost:3000/api/matches` lists all World Cup fixtures with ids.
-
-## Demo modes and URL parameters
-
-The stream source is chosen per-URL (relative to `/app`):
-
-| Parameter | Values                          | Default   | Meaning                                    |
-| --------- | ------------------------------- | --------- | ------------------------------------------ |
-| `source`  | `live` / `history` / `replay`   | `history` | TxLINE stream / past match / recorded file |
-| `speed`   | `1`, `4`, `16`, `150`, `instant`| `instant` | playback multiplier (history, replay)      |
-| `name`    | replay file name                | `match`   | reads `data/replays/<name>.json`           |
-| `fixture` | numeric fixture id              | env       | fixture for `live` and `history`           |
-
-Example: `http://localhost:3000/app?source=replay&name=semifinal&speed=16`
-
-**Controls**: press **`d`** or click the **⚙** in the top bar to open the
-control drawer — switch source (live/replay), pick from today's fixtures or
-type a fixture id, choose a replay file and speed, and see network/connection
-state. `Esc` closes it.
-
-## Environment variables (.env.local)
-
-Required for LIVE data (the default mode) and verification. Copy the template
-and fill it in:
-
-```bash
-cp .env.example .env.local
+```
+src/app/            Next.js routes (landing, /app dashboard, /api streaming + data)
+src/components/     Dashboard, Ledger, Fairness, Market Pulse, AI Analyst, Landing
+src/lib/txline/     TxLINE API client, feed normalization and event mapping
+src/lib/sources/    live / history / replay match sources
+src/lib/            reducers, verification, odds, baselines, dedup keys
 ```
 
-| Variable            | Example                      | Purpose                                        |
-| ------------------- | ---------------------------- | ---------------------------------------------- |
-| `TXLINE_API_ORIGIN` | `https://txline.txodds.com`  | TxLINE API host (default: mainnet)             |
-| `TXLINE_NETWORK`    | `mainnet` or `devnet`        | drives explorer links + footer label           |
-| `TXLINE_API_TOKEN`  | `…`                          | your activated API token (see below)           |
-| `TXLINE_FIXTURE_ID` | `17952170`                   | optional: default fixture for LIVE mode        |
+## A note on the demo data
 
-Restart the dev server after changing `.env.local`. All credentials stay
-server-side — the browser only ever receives normalized events.
-
-## Getting a TxLINE API token (mainnet free tier)
-
-TxLINE access is activated by an on-chain Solana subscription tied to your
-wallet:
-
-1. Have a Solana wallet keyfile (e.g. `~/.config/solana/id.json`) with a
-   small amount of SOL on mainnet-beta for transaction fees.
-2. Run the one-shot activation script:
-
-   ```bash
-   ANCHOR_WALLET=~/.config/solana/id.json npx tsx scripts/activate-mainnet.mts
-   ```
-
-   It subscribes on-chain (service level 12, 4 weeks, all leagues), fetches a
-   guest JWT, signs the activation preimage with your wallet, calls
-   `/api/token/activate`, and prints `TXLINE_API_TOKEN`. It fails loudly on
-   any network/host mismatch (non-mainnet RPC, wrong API origin, empty
-   wallet).
-3. Paste the printed token into `TXLINE_API_TOKEN` in `.env.local`, set
-   `TXLINE_FIXTURE_ID`, restart, and open `?source=live`.
-
-## Operations scripts
-
-All run with `npx tsx` (downloaded on demand):
-
-| Script                        | Command                                                             | What it does                                                        |
-| ----------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| `scripts/verify-endpoints.mts` | `npx tsx scripts/verify-endpoints.mts`                               | checks every API path we use against the published `docs.yaml`, ✓/✗ table, non-zero exit on a miss |
-| `scripts/smoke-live.mts`       | `TXLINE_API_TOKEN=… npx tsx scripts/smoke-live.mts <fixtureId> [s]`  | streams live scores for 30s, prints raw + normalized events          |
-| `scripts/record-replay.mts`    | `npx tsx scripts/record-replay.mts <fixtureId> <name>`               | saves a past match to `data/replays/<name>.json` for replay mode     |
-| `scripts/activate-mainnet.mts` | see previous section                                                | one-shot mainnet subscription + token activation                     |
-
-`record-replay.mts` reads `.env.local`. A 401/403 means the API token must
-be renewed or reactivated; an empty historical response means TxLINE has no
-score record for that fixture, even if it appears in the fixture snapshot.
-
-## Pre-kickoff checklist
-
-1. `npx tsx scripts/verify-endpoints.mts` — required: our endpoint paths were
-   taken from a third-party SDK's source, not the spec itself.
-2. `TXLINE_API_TOKEN=… npx tsx scripts/smoke-live.mts <fixtureId>` — confirm
-   real data flows.
-3. `npx tsx scripts/record-replay.mts <fixtureId> <name>` — record a
-   controversial past match for the warm-up demo and as a realistic fallback.
-
-## Demo-day runbook
-
-- Open `/app` and pick the match from the strip, or `?source=history&fixture=<id>`
-  and walk through a recorded controversy — the record loads instantly and
-  MARKET PULSE replays the market's reaction.
-- For a live match, open the ⚙ controls and switch to LIVE with the fixture id.
-- If the feed misbehaves, fall back to a recorded `replay` file.
-
-## Data notes
-
-- Fouls are approximated by conceded free kicks with the documented
-  `FreeKickType` danger levels — the feed's stated foul proxy. Labeled
-  "FK CONCEDED · foul proxy" in the UI.
-- "Anchored" marks come from TxLINE validation proofs for the fixture's stats
-  (`/scores/stat-validation`), linking to the program on Solana explorer.
-  Unavailable proofs degrade to "pending", never to a false check.
-- Baselines in `data/baselines.json` are placeholder distributions until
-  regenerated from recorded tournament matches.
+The World Cup used for this build is complete, so live odds cannot stream in real
+time. To showcase Market Pulse on camera, press **`k`** three times to toggle a
+clearly badged **SIMULATED** mode derived from the open match's real decisions. It
+is off by default and never shown in normal use. Everything else, the ledger,
+fairness stats, verification marks, and AI analysis, runs on real feed data.

@@ -1,7 +1,8 @@
 import { apiFetch, parseRecords } from "@/lib/txline/api";
-import { aggregatePlayers, createMapper, normalizeRaw } from "@/lib/txline/map";
+import { aggregatePlayers, createMapper, normalizeRaw, orderRecords } from "@/lib/txline/map";
+import { eventKey } from "@/lib/eventKey";
 import { reduce } from "@/lib/reduce";
-import type { Players, RawScore } from "@/lib/types";
+import type { Players } from "@/lib/types";
 
 export type MatchSummary = {
   id: string;
@@ -26,11 +27,15 @@ export async function getMatchSummary(id: string): Promise<MatchSummary | null> 
       1: String(header?.participant1 ?? header?.Participant1 ?? "Team A"),
       2: String(header?.participant2 ?? header?.Participant2 ?? "Team B"),
     };
-    const records = all
-      .filter((r) => typeof r.seq === "number")
-      .sort((a, b) => a.seq - b.seq) as RawScore[];
+    const records = orderRecords(all);
     const map = createMapper(true);
-    const events = records.flatMap((r) => map(r));
+    const seen = new Set<string>();
+    const events = records.flatMap((r) => map(r)).filter((e) => {
+      const k = eventKey(e);
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
     const state = reduce(events);
     const keyEvents = events
       .filter((e) => KEY.has(e.kind) && !(e.kind === "var_end" && !e.detail.includes("OVERTURNED")))

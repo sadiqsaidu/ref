@@ -1,0 +1,84 @@
+REF: LOOM DEMO SCRIPT
+Target length: 2 to 3 minutes
+Live app: https://ref-sage.vercel.app/
+
+Format note: [SCREEN] cues describe what to show. Spoken lines are the voiceover.
+Keep the pace brisk and confident. Roughly 400 to 450 words total.
+
+------------------------------------------------------------
+0:00  HOOK  (about 25 seconds)
+------------------------------------------------------------
+[SCREEN: the Argentina vs Egypt scoreline, then a fast montage of angry
+social posts, "RIGGED", frame-by-frame offside screenshots.]
+
+VOICEOVER:
+"Last week, Argentina versus Egypt broke the internet. Egypt scored to go
+two-nil up, and then VAR took it away for an offside no one in the stadium
+could even see. Late cards, a soft penalty, and within the hour half the
+football world had decided the match was rigged. The other half said fans
+were just biased. Here is the thing. Nobody actually had the data. Everybody
+had an opinion."
+
+------------------------------------------------------------
+0:25  PROBLEM  (about 25 seconds)
+------------------------------------------------------------
+[SCREEN: split screen of two fan reactions, then fade to black with the word
+"EVIDENCE?" ]
+
+VOICEOVER:
+"This happens every single tournament. Fan trust in officiating is broken,
+and when people cannot check the facts, subjective feelings turn into
+conspiracy theories. We do not need more hot takes. We need a neutral,
+tamper-proof record of what the referee actually did, in language a normal
+fan can understand. That is REF."
+
+------------------------------------------------------------
+0:50  SOLUTION AND WALKTHROUGH  (about 80 seconds)
+------------------------------------------------------------
+[SCREEN: open https://ref-sage.vercel.app/, then click into the dashboard.]
+
+VOICEOVER:
+"REF is a referee transparency dashboard for the World Cup. It runs on
+TxODDS's cryptographically signed data feed, so every number you see can be
+traced back to a signed source."
+
+[SCREEN: the Decision Ledger, scrolling through calls. Hover a green check.]
+
+"On the left is the Decision Ledger. Every goal, card, penalty and VAR review,
+in order, with a minute stamp and the team involved. See these green checks?
+Each decision is anchored on Solana. Click one and it opens the on-chain proof.
+This record cannot be quietly edited after the fact."
+
+[SCREEN: the Fairness panel, the discipline mirror and the percentile bars.]
+
+"On the right is the Fairness view. Both teams' cards, fouls and VAR checks,
+mirrored, and measured against every other World Cup match. Notice we never
+say bias or rigged. We say within normal range, unusual, or rare, and we show
+the numbers behind the word."
+
+[SCREEN: scroll to Market Pulse, point at a hairline where the red card lands.]
+
+"This is Market Pulse, and it is our anti-conspiracy index. It plots consensus
+win probability over the match, with zero betting. Watch what happens at the
+red card. The market moves after the decision becomes public, not before. That
+is evidence the call was not leaked or predicted in advance."
+
+[SCREEN: hit Replay Match, let it animate, then open the AI Analyst and type
+a question like "was the disallowed goal correct?"]
+
+"Any completed match replays as a highlight reel. And our AI Analyst knows the
+Laws of the Game. Ask it a fan question in plain English, and it answers using
+only this match's verified data."
+
+------------------------------------------------------------
+2:10  OUTRO  (about 20 seconds)
+------------------------------------------------------------
+[SCREEN: back to the landing page, REF wordmark, then the live URL on screen.]
+
+VOICEOVER:
+"Football does not need more arguments. It needs receipts. REF turns the loudest
+fight in sport into something you can actually check: transparent, verifiable,
+and neutral. Officiating you can trust, because you can see the proof. Try it
+now at ref-sage.vercel.app. This is REF."
+
+[END]
