@@ -1,9 +1,9 @@
 # REF: Referee Transparency for the World Cup
 
 **Live app:** https://ref-sage.vercel.app/
-**Demo video:** [Insert Loom Video Link Here]
+**Demo video:** https://loom.com/share/folder/3121db8ec55d4b3b83775642212cf235
 
-Built for the **TxODDS World Cup Hackathon** (Superteam Nigeria Track & Global Track).
+Built for the **TxODDS World Cup Hackathon** 
 
 ---
 
@@ -143,11 +143,3 @@ src/lib/txline/     TxLINE API client, feed normalization and event mapping
 src/lib/sources/    live / history / replay match sources
 src/lib/            reducers, verification, odds, baselines, dedup keys
 ```
-
-## A note on the demo data
-
-The World Cup used for this build is complete, so live odds cannot stream in real
-time. To showcase Market Pulse on camera, press **`k`** three times to toggle a
-clearly badged **SIMULATED** mode derived from the open match's real decisions. It
-is off by default and never shown in normal use. Everything else, the ledger,
-fairness stats, verification marks, and AI analysis, runs on real feed data.
