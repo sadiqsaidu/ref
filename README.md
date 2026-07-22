@@ -7,18 +7,15 @@ Built for the **TxODDS World Cup Hackathon**
 
 ---
 
-## The night football stopped trusting the referee
+## Every controversial decision follows the same pattern
 
-Round of 16. Argentina versus Egypt. In the 63rd minute Egypt swept in what looked
-like a clean second goal to go 2-0 up. The stadium erupted. Then the VAR light
-came on. Four minutes later the goal was chalked off for a fractional offside no
-one in the crowd could see. Argentina went down the other end, drew a soft penalty,
-and by full time Egypt had collected two late yellow cards and a straight red.
+Every World Cup produces moments that divide millions of fans.
 
-Within the hour the timeline had made up its mind. Screenshots of the offside line.
-Frame-by-frame threads. "Rigged." "Bought." "Same old story." Egyptian fans were
-certain they had been robbed; Argentine fans were certain the outrage was cope.
-Nobody had the actual data. Everybody had an opinion.
+A goal is ruled out for a marginal offside. A penalty is awarded after a long VAR review. A red card changes the course of a knockout match. Within minutes social media fills with screenshots, slow-motion clips, and claims that the referee got it wrong—or worse, that the match was influenced.
+
+The problem is that almost nobody has access to the complete picture.
+
+Fans see isolated clips. Commentators focus on the biggest moments. Statistics are scattered across different sources. By the time emotions settle, opinions have already hardened into narratives.
 
 That is the problem REF was built to solve.
 
